@@ -11,10 +11,10 @@ class Etapa(Base, TimestampMixin):
 
     id = Column(Integer, primary_key=True, index=True)
     servico_id = Column(Integer, ForeignKey("servicos.id"), nullable=False)
-    nome = Column(String(200), nullable=False)
-    descricao = Column(Text)
+    nome = Column(String(500), nullable=False)  # descricao no MySQL
+    descricao = Column(Text)  # descricao_contrato no MySQL
     ordem = Column(Integer, default=0)
-    obrigatoria = Column(Boolean, default=True)
+    obrigatoria = Column(Boolean, default=True)  # exibir no MySQL (invertido)
     
     # Relacionamentos
     servico = relationship("Servico", back_populates="etapas")

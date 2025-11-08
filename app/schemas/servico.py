@@ -8,7 +8,7 @@ from decimal import Decimal
 
 
 class EtapaBase(BaseModel):
-    nome: str = Field(..., max_length=200)
+    nome: str = Field(..., max_length=500)
     descricao: Optional[str] = None
     ordem: int = 0
     obrigatoria: bool = True
@@ -19,7 +19,7 @@ class EtapaCreate(EtapaBase):
 
 
 class EtapaUpdate(BaseModel):
-    nome: Optional[str] = Field(None, max_length=200)
+    nome: Optional[str] = Field(None, max_length=500)
     descricao: Optional[str] = None
     ordem: Optional[int] = None
     obrigatoria: Optional[bool] = None
@@ -36,10 +36,12 @@ class EtapaResponse(EtapaBase):
 
 
 class ServicoBase(BaseModel):
-    nome: str = Field(..., max_length=200)
+    nome: str = Field(..., max_length=500)
     descricao: Optional[str] = None
+    descricao_contrato: Optional[str] = None
     valor_base: Optional[Decimal] = None
     unidade: Optional[str] = Field(None, max_length=50)
+    codigo_plano_contas: Optional[str] = Field(None, max_length=50)
     ativo: bool = True
 
 
@@ -48,10 +50,12 @@ class ServicoCreate(ServicoBase):
 
 
 class ServicoUpdate(BaseModel):
-    nome: Optional[str] = Field(None, max_length=200)
+    nome: Optional[str] = Field(None, max_length=500)
     descricao: Optional[str] = None
+    descricao_contrato: Optional[str] = None
     valor_base: Optional[Decimal] = None
     unidade: Optional[str] = Field(None, max_length=50)
+    codigo_plano_contas: Optional[str] = Field(None, max_length=50)
     ativo: Optional[bool] = None
 
 
