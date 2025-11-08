@@ -1,0 +1,62 @@
+from sqlalchemy.orm import Session
+from app.repositories.user import UserRepository
+from app.schemas.user import UserCreate, UserUpdate, UserResponse
+from app.core.exceptions import NotFoundException, ConflictException
+from typing import List, Optional
+
+
+class UserService:
+    def __init__(self, db: Session):
+        self.db = db
+        self.repository = UserRepository(db)
+    
+    def get_all(
+        self, 
+        skip: int = 0, 
+        limit: int = 100,
+        ativo: Optional[bool] = None,
+        search: Optional[str] = None
+    ) -> List[UserResponse]:
+        """Lista todos os usuários"""
+        users = self.repository.get_all(skip, limit, ativo, search)
+        return [UserResponse.from_orm(user) for user in users]
+    
+    def get_by_id(self, user_id: int) -> UserResponse:
+        """Busca usuário por ID"""
+        user = self.repository.get_by_id(user_id)
+        if not user:
+            raise NotFoundException(f"Usuário {user_id} não encontrado")
+        return UserResponse.from_orm(user)
+    
+    def create(self, user: UserCreate) -> UserResponse:
+        """Cria novo usuário"""
+        # Verificar se email já existe
+        existing_email = self.repository.get_by_email(user.email)
+        if existing_email:
+            raise ConflictException("Email já cadastrado")
+        
+        # Verificar se CPF já existe
+        existing_cpf = self.repository.get_by_cpf(user.cpf)
+        if existing_cpf:
+            raise ConflictException("CPF já cadastrado")
+        
+        db_user = self.repository.create(user)
+        return UserResponse.from_orm(db_user)
+    
+    def update(self, user_id: int, user: UserUpdate) -> UserResponse:
+        """Atualiza usuário"""
+        db_user = self.repository.update(user_id, user)
+        if not db_user:
+            raise NotFoundException(f"Usuário {user_id} não encontrado")
+        return UserResponse.from_orm(db_user)
+    
+    def delete(self, user_id: int) -> bool:
+        """Remove usuário (soft delete)"""
+        success = self.repository.delete(user_id)
+        if not success:
+            raise NotFoundException(f"Usuário {user_id} não encontrado")
+        return True
+    
+    def count(self) -> int:
+        """Conta total de usuários"""
+        return self.repository.count()

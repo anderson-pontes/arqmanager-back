@@ -1,0 +1,33 @@
+# Versão simplificada - instalar nesta ordem
+
+# 1. Primeiro, atualize pip e setuptools
+# pip install --upgrade pip setuptools wheel
+
+# 2. Instale as dependências básicas
+fastapi
+uvicorn[standard]
+python-multipart
+
+# 3. Database
+sqlalchemy
+alembic
+psycopg2-binary
+
+# 4. Security
+python-jose[cryptography]
+passlib[bcrypt]
+python-dotenv
+
+# 5. Validation
+pydantic
+pydantic-settings
+email-validator
+
+# 6. Utils
+python-dateutil
+pytz
+
+# 7. Testing (opcional por enquanto)
+pytest
+pytest-asyncio
+httpx
