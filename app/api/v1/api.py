@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users
+from app.api.v1.endpoints import auth, users, clientes, servicos
 
 api_router = APIRouter()
 
@@ -15,4 +15,5 @@ def health_check():
 # Incluir routers dos módulos
 api_router.include_router(auth.router, prefix="/auth", tags=["Autenticação"])
 api_router.include_router(users.router, prefix="/users", tags=["Usuários"])
-# api_router.include_router(clientes.router, prefix="/clientes", tags=["clientes"])
+api_router.include_router(clientes.router, prefix="/clientes", tags=["Clientes"])
+api_router.include_router(servicos.router, prefix="/servicos", tags=["Serviços"])

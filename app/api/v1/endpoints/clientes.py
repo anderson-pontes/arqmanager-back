@@ -1,0 +1,109 @@
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
+from typing import List, Optional
+from app.database import get_db
+from app.services.cliente import ClienteService
+from app.schemas.cliente import ClienteCreate, ClienteUpdate, ClienteResponse
+from app.api.deps import get_current_user
+
+router = APIRouter()
+
+
+@router.get("/", response_model=List[ClienteResponse])
+def list_clientes(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100),
+    ativo: Optional[bool] = None,
+    tipo_pessoa: Optional[str] = None,
+    search: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Lista todos os clientes
+    
+    Filtros:
+    - ativo: Filtrar por status (True/False)
+    - tipo_pessoa: Filtrar por tipo (Física/Jurídica)
+    - search: Buscar por nome, email, CPF/CNPJ ou cidade
+    """
+    service = ClienteService(db)
+    return service.get_all(skip=skip, limit=limit, ativo=ativo, tipo_pessoa=tipo_pessoa, search=search)
+
+
+@router.post("/", response_model=ClienteResponse, status_code=201)
+def create_cliente(
+    cliente: ClienteCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Cria um novo cliente
+    
+    Validações:
+    - Email único
+    - CPF/CNPJ único
+    - CPF: 11 dígitos para Pessoa Física
+    - CNPJ: 14 dígitos para Pessoa Jurídica
+    """
+    service = ClienteService(db)
+    return service.create(cliente)
+
+
+@router.get("/{cliente_id}", response_model=ClienteResponse)
+def get_cliente(
+    cliente_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Busca um cliente por ID
+    """
+    service = ClienteService(db)
+    return service.get_by_id(cliente_id)
+
+
+@router.put("/{cliente_id}", response_model=ClienteResponse)
+def update_cliente(
+    cliente_id: int,
+    cliente: ClienteUpdate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Atualiza um cliente
+    """
+    service = ClienteService(db)
+    return service.update(cliente_id, cliente)
+
+
+@router.delete("/{cliente_id}", status_code=204)
+def delete_cliente(
+    cliente_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Remove um cliente (soft delete)
+    """
+    service = ClienteService(db)
+    service.delete(cliente_id)
+
+
+@router.get("/stats/count")
+def count_clientes(
+    ativo: Optional[bool] = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Retorna total de clientes cadastrados
+    
+    Parâmetros:
+    - ativo: Contar apenas ativos (True) ou inativos (False), ou todos (None)
+    """
+    service = ClienteService(db)
+    return {
+        "total": service.count(ativo),
+        "ativo": ativo
+    }

@@ -31,8 +31,8 @@ class AuthService:
             raise UnauthorizedException("Email ou senha incorretos")
         
         # Criar tokens
-        access_token = create_access_token(data={"sub": user.id, "email": user.email})
-        refresh_token = create_refresh_token(data={"sub": user.id, "email": user.email})
+        access_token = create_access_token(data={"sub": str(user.id), "email": user.email})
+        refresh_token = create_refresh_token(data={"sub": str(user.id), "email": user.email})
         
         # Verificar se precisa selecionar escritório
         requires_selection = len(user.escritorios) > 1
@@ -65,7 +65,7 @@ class AuthService:
             raise UnauthorizedException("Usuário não encontrado ou inativo")
         
         # Criar novo access token
-        new_access_token = create_access_token(data={"sub": user_id, "email": email})
+        new_access_token = create_access_token(data={"sub": str(user_id), "email": email})
         
         return {
             "access_token": new_access_token,
