@@ -1,5 +1,22 @@
 # 🚀 Guia de Início Rápido - ARQManager Backend
 
+## 📚 Documentação Disponível
+
+👉 **Ver índice completo:** [INDICE_DOCUMENTACAO.md](INDICE_DOCUMENTACAO.md)
+
+**Documentação Principal:**
+
+-   **🚀 QUICK_START.md** (este arquivo) - Início rápido
+-   **📖 README.md** - Documentação completa do projeto
+
+**Migração de Dados:**
+
+-   **🔄 README_MIGRACAO.md** - Visão geral da migração ⭐
+-   **📖 GUIA_MIGRACAO_DADOS.md** - Guia detalhado
+-   **✅ CHECKLIST_MIGRACAO.md** - Checklist passo a passo
+-   **⚡ COMANDOS_MIGRACAO.md** - Referência rápida
+-   **💡 EXEMPLOS_MIGRACAO.md** - Exemplos práticos
+
 ## ✅ Backend 100% Completo!
 
 **7 Fases Implementadas** | **~55 Endpoints RESTful** | **10 Modelos** | **PostgreSQL**
@@ -14,6 +31,20 @@
 -   💰 Propostas/Orçamentos
 -   💵 Movimentos Financeiros
 -   📊 Status e Controles
+
+## � Migxração de Dados MySQL → PostgreSQL
+
+**Já tem dados no MySQL?** Siga o guia de migração:
+
+1. 📖 Leia: `GUIA_MIGRACAO_DADOS.md`
+2. ✅ Siga: `CHECKLIST_MIGRACAO.md`
+3. 🚀 Execute: `python migrate_data.py`
+
+**Arquivos de migração:**
+
+-   `check_mysql.py` - Testa conexão MySQL
+-   `migrate_data.py` - Executa migração
+-   `check_migrated_data.py` - Verifica dados migrados
 
 ## 📋 Próximos Passos
 
