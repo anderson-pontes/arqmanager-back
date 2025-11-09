@@ -1,136 +1,128 @@
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, validator, Field
 from typing import Optional
 from datetime import date, datetime
 from enum import Enum
 
 
 class TipoPessoaEnum(str, Enum):
-    FISICA = "Física"
-    JURIDICA = "Jurídica"
+    FISICA = "fisica"
+    JURIDICA = "juridica"
 
 
-class EnderecoBase(BaseModel):
-    logradouro: str
-    numero: str
-    complemento: Optional[str] = None
-    bairro: str
-    cidade: str
-    uf: str
-    cep: str
-    
-    @validator('uf')
-    def validate_uf(cls, v):
-        if len(v) != 2:
-            raise ValueError('UF deve ter 2 caracteres')
-        return v.upper()
-    
-    @validator('cep')
-    def validate_cep(cls, v):
-        # Remove caracteres não numéricos
-        cep = ''.join(filter(str.isdigit, v))
-        if len(cep) != 8:
-            raise ValueError('CEP deve ter 8 dígitos')
-        return cep
-
-
-class ClienteBase(BaseModel):
+class ClienteCreate(BaseModel):
     nome: str
-    razao_social: Optional[str] = None
-    email: EmailStr
-    identificacao: str
-    tipo_pessoa: TipoPessoaEnum
-    telefone: str
-    whatsapp: Optional[str] = None
-    data_nascimento: Optional[date] = None
-    logradouro: Optional[str] = None  # ✅ Opcional
-    numero: Optional[str] = None  # ✅ Opcional
-    complemento: Optional[str] = None
-    bairro: Optional[str] = None  # ✅ Opcional
-    cidade: Optional[str] = None  # ✅ Opcional
-    uf: Optional[str] = None  # ✅ Opcional
-    cep: Optional[str] = None  # ✅ Opcional
-    inscricao_estadual: Optional[str] = None
-    inscricao_municipal: Optional[str] = None
-    indicado_por: Optional[str] = None
+    email: Optional[str] = None
+    telefone: Optional[str] = None
+    cpf_cnpj: Optional[str] = None
+    tipo_pessoa: str = "fisica"
+    endereco: Optional[str] = None
+    cidade: Optional[str] = None
+    estado: Optional[str] = None
+    cep: Optional[str] = None
+    observacoes: Optional[str] = None
+    ativo: Optional[bool] = True
     
-    @validator('identificacao')
-    def validate_identificacao(cls, v, values):
-        # Remove caracteres não numéricos
-        doc = ''.join(filter(str.isdigit, v))
-        
-        tipo = values.get('tipo_pessoa')
-        if tipo == TipoPessoaEnum.FISICA:
-            if len(doc) != 11:
-                raise ValueError('CPF deve ter 11 dígitos')
-        elif tipo == TipoPessoaEnum.JURIDICA:
-            if len(doc) != 14:
-                raise ValueError('CNPJ deve ter 14 dígitos')
-        
-        return doc
-    
-    @validator('uf')
-    def validate_uf(cls, v):
-        if v and len(v) != 2:  # ✅ Só valida se não for None
-            raise ValueError('UF deve ter 2 caracteres')
-        return v.upper() if v else None
-    
-    @validator('cep')
-    def validate_cep(cls, v):
-        if not v:  # ✅ Se for None, retorna None
-            return None
-        cep = ''.join(filter(str.isdigit, v))
-        if len(cep) != 8:
-            raise ValueError('CEP deve ter 8 dígitos')
-        return cep
-
-
-class ClienteCreate(ClienteBase):
-    pass
+    @validator('tipo_pessoa')
+    def normalize_tipo_pessoa(cls, v):
+        """Normaliza tipo_pessoa para o formato do banco"""
+        if v:
+            tipo_map = {
+                'fisica': 'Física',
+                'juridica': 'Jurídica',
+                'Física': 'Física',
+                'Jurídica': 'Jurídica'
+            }
+            return tipo_map.get(v, 'Física')
+        return 'Física'
 
 
 class ClienteUpdate(BaseModel):
     nome: Optional[str] = None
-    razao_social: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     telefone: Optional[str] = None
-    whatsapp: Optional[str] = None
-    data_nascimento: Optional[date] = None
-    logradouro: Optional[str] = None
-    numero: Optional[str] = None
-    complemento: Optional[str] = None
-    bairro: Optional[str] = None
+    cpf_cnpj: Optional[str] = None
+    tipo_pessoa: Optional[str] = None
+    endereco: Optional[str] = None
     cidade: Optional[str] = None
-    uf: Optional[str] = None
+    estado: Optional[str] = None
     cep: Optional[str] = None
-    inscricao_estadual: Optional[str] = None
-    inscricao_municipal: Optional[str] = None
-    indicado_por: Optional[str] = None
+    observacoes: Optional[str] = None
     ativo: Optional[bool] = None
+    
+    @validator('tipo_pessoa')
+    def normalize_tipo_pessoa(cls, v):
+        """Normaliza tipo_pessoa para o formato do banco"""
+        if v:
+            tipo_map = {
+                'fisica': 'Física',
+                'juridica': 'Jurídica',
+                'Física': 'Física',
+                'Jurídica': 'Jurídica'
+            }
+            return tipo_map.get(v, v)
+        return v
 
 
 class ClienteResponse(BaseModel):
     id: int
     nome: str
-    razao_social: Optional[str] = None
-    email: str
-    identificacao: str
-    tipo_pessoa: str  # ✅ String simples, sem Enum
-    telefone: str
-    whatsapp: Optional[str] = None
-    data_nascimento: Optional[date] = None
-    logradouro: Optional[str] = None
-    numero: Optional[str] = None
-    complemento: Optional[str] = None
-    bairro: Optional[str] = None
+    email: Optional[str] = None
+    telefone: Optional[str] = None
+    cpf_cnpj: Optional[str] = None
+    tipo_pessoa: str
+    endereco: Optional[str] = None
     cidade: Optional[str] = None
-    uf: Optional[str] = None
+    estado: Optional[str] = None
     cep: Optional[str] = None
-    inscricao_estadual: Optional[str] = None
-    inscricao_municipal: Optional[str] = None
-    indicado_por: Optional[str] = None
+    observacoes: Optional[str] = None
     ativo: bool
     created_at: datetime
     updated_at: datetime
     
     class Config:
         from_attributes = True
+    
+    @classmethod
+    def from_orm(cls, obj, db=None):
+        """Converte modelo do banco para resposta da API com mapeamento de campos"""
+        # Processar indicado_por: se for um ID numérico, buscar o nome do cliente
+        observacoes = obj.indicado_por
+        if observacoes and observacoes.isdigit() and db:
+            try:
+                from app.models.cliente import Cliente
+                indicador_id = int(observacoes)
+                indicador = db.query(Cliente).filter(Cliente.id == indicador_id).first()
+                if indicador:
+                    observacoes = f"Indicado por: {indicador.nome}"
+            except:
+                pass  # Se der erro, mantém o valor original
+        
+        return cls(
+            id=obj.id,
+            nome=obj.nome,
+            email=obj.email or None,
+            telefone=obj.telefone or None,
+            cpf_cnpj=obj.identificacao or None,  # Mapear identificacao -> cpf_cnpj
+            tipo_pessoa=cls._normalize_tipo_pessoa(obj.tipo_pessoa),
+            endereco=obj.logradouro or None,  # Mapear logradouro -> endereco
+            cidade=obj.cidade or None,
+            estado=obj.uf or None,  # Mapear uf -> estado
+            cep=obj.cep or None,
+            observacoes=observacoes,  # Mapear indicado_por -> observacoes (com nome se for ID)
+            ativo=obj.ativo,
+            created_at=obj.created_at,
+            updated_at=obj.updated_at
+        )
+    
+    @staticmethod
+    def _normalize_tipo_pessoa(v):
+        """Normaliza tipo_pessoa para lowercase"""
+        if v:
+            tipo_map = {
+                'Física': 'fisica',
+                'Jurídica': 'juridica',
+                'fisica': 'fisica',
+                'juridica': 'juridica'
+            }
+            return tipo_map.get(v, v.lower() if isinstance(v, str) else v)
+        return v

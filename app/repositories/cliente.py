@@ -52,7 +52,22 @@ class ClienteRepository:
     
     def create(self, cliente: ClienteCreate) -> Cliente:
         """Cria novo cliente"""
-        db_cliente = Cliente(**cliente.dict())
+        # Mapear campos do frontend para o banco
+        cliente_data = {
+            'nome': cliente.nome,
+            'email': cliente.email,
+            'telefone': cliente.telefone,
+            'identificacao': cliente.cpf_cnpj,
+            'tipo_pessoa': cliente.tipo_pessoa,
+            'logradouro': cliente.endereco,
+            'cidade': cliente.cidade,
+            'uf': cliente.estado,
+            'cep': cliente.cep,
+            'indicado_por': cliente.observacoes,
+            'ativo': cliente.ativo if cliente.ativo is not None else True
+        }
+        
+        db_cliente = Cliente(**cliente_data)
         self.db.add(db_cliente)
         self.db.commit()
         self.db.refresh(db_cliente)
@@ -64,7 +79,20 @@ class ClienteRepository:
         if not db_cliente:
             return None
         
+        # Mapear campos do frontend para o banco
+        field_mapping = {
+            'cpf_cnpj': 'identificacao',
+            'endereco': 'logradouro',
+            'estado': 'uf',
+            'observacoes': 'indicado_por'
+        }
+        
         update_data = cliente.dict(exclude_unset=True)
+        for frontend_field, backend_field in field_mapping.items():
+            if frontend_field in update_data:
+                value = update_data.pop(frontend_field)
+                update_data[backend_field] = value
+        
         for field, value in update_data.items():
             setattr(db_cliente, field, value)
         
