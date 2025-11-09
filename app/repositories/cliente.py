@@ -82,9 +82,29 @@ class ClienteRepository:
         self.db.commit()
         return True
     
-    def count(self, ativo: Optional[bool] = None) -> int:
-        """Conta total de clientes"""
+    def count(
+        self, 
+        ativo: Optional[bool] = None,
+        tipo_pessoa: Optional[str] = None,
+        search: Optional[str] = None
+    ) -> int:
+        """Conta total de clientes com filtros"""
         query = self.db.query(Cliente)
+        
         if ativo is not None:
             query = query.filter(Cliente.ativo == ativo)
+        
+        if tipo_pessoa:
+            query = query.filter(Cliente.tipo_pessoa == tipo_pessoa)
+        
+        if search:
+            query = query.filter(
+                or_(
+                    Cliente.nome.ilike(f"%{search}%"),
+                    Cliente.email.ilike(f"%{search}%"),
+                    Cliente.identificacao.ilike(f"%{search}%"),
+                    Cliente.cidade.ilike(f"%{search}%")
+                )
+            )
+        
         return query.count()

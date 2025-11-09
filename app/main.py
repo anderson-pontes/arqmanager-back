@@ -16,10 +16,11 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=["*"],  # ⚠️ TEMPORÁRIO - aceita qualquer origem
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Include API router
@@ -34,6 +35,15 @@ def root():
         "version": settings.APP_VERSION,
         "docs": "/docs",
         "health": "/api/v1/health"
+    }
+
+
+@app.get("/test-cors", tags=["test"])
+def test_cors():
+    """Endpoint de teste para CORS (sem autenticação)"""
+    return {
+        "message": "CORS está funcionando!",
+        "origin": "http://localhost:5173"
     }
 
 

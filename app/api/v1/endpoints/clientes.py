@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from pydantic import BaseModel
 from app.database import get_db
 from app.services.cliente import ClienteService
 from app.schemas.cliente import ClienteCreate, ClienteUpdate, ClienteResponse
@@ -9,10 +10,24 @@ from app.api.deps import get_current_user
 router = APIRouter()
 
 
-@router.get("/", response_model=List[ClienteResponse])
+class ClienteListResponse(BaseModel):
+    """Schema de resposta paginada"""
+    items: List[ClienteResponse]
+    total: int
+    skip: int
+    limit: int
+
+
+@router.get("/test")
+def test_clientes():
+    """Endpoint de teste simples"""
+    return {"message": "Endpoint de clientes funcionando!", "total": 135}
+
+
+@router.get("/", response_model=ClienteListResponse)
 def list_clientes(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=100),
+    skip: int = Query(0, ge=0, description="Número de registros a pular"),
+    limit: int = Query(20, ge=1, le=100, description="Número de registros por página"),
     ativo: Optional[bool] = None,
     tipo_pessoa: Optional[str] = None,
     search: Optional[str] = None,
@@ -20,15 +35,31 @@ def list_clientes(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Lista todos os clientes
+    Lista todos os clientes com paginação
     
-    Filtros:
+    Parâmetros:
+    - skip: Número de registros a pular (padrão: 0)
+    - limit: Número de registros por página (padrão: 20, máx: 100)
     - ativo: Filtrar por status (True/False)
     - tipo_pessoa: Filtrar por tipo (Física/Jurídica)
     - search: Buscar por nome, email, CPF/CNPJ ou cidade
+    
+    Retorna:
+    - items: Lista de clientes
+    - total: Total de clientes no banco
+    - skip: Offset usado
+    - limit: Limite usado
     """
     service = ClienteService(db)
-    return service.get_all(skip=skip, limit=limit, ativo=ativo, tipo_pessoa=tipo_pessoa, search=search)
+    clientes = service.get_all(skip=skip, limit=limit, ativo=ativo, tipo_pessoa=tipo_pessoa, search=search)
+    total = service.count(ativo=ativo, tipo_pessoa=tipo_pessoa, search=search)  # ✅ Passa search para count
+    
+    return {
+        "items": clientes,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 
 @router.post("/", response_model=ClienteResponse, status_code=201)

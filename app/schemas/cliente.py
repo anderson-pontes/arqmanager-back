@@ -42,13 +42,13 @@ class ClienteBase(BaseModel):
     telefone: str
     whatsapp: Optional[str] = None
     data_nascimento: Optional[date] = None
-    logradouro: str
-    numero: str
+    logradouro: Optional[str] = None  # ✅ Opcional
+    numero: Optional[str] = None  # ✅ Opcional
     complemento: Optional[str] = None
-    bairro: str
-    cidade: str
-    uf: str
-    cep: str
+    bairro: Optional[str] = None  # ✅ Opcional
+    cidade: Optional[str] = None  # ✅ Opcional
+    uf: Optional[str] = None  # ✅ Opcional
+    cep: Optional[str] = None  # ✅ Opcional
     inscricao_estadual: Optional[str] = None
     inscricao_municipal: Optional[str] = None
     indicado_por: Optional[str] = None
@@ -70,12 +70,14 @@ class ClienteBase(BaseModel):
     
     @validator('uf')
     def validate_uf(cls, v):
-        if len(v) != 2:
+        if v and len(v) != 2:  # ✅ Só valida se não for None
             raise ValueError('UF deve ter 2 caracteres')
-        return v.upper()
+        return v.upper() if v else None
     
     @validator('cep')
     def validate_cep(cls, v):
+        if not v:  # ✅ Se for None, retorna None
+            return None
         cep = ''.join(filter(str.isdigit, v))
         if len(cep) != 8:
             raise ValueError('CEP deve ter 8 dígitos')
@@ -106,8 +108,26 @@ class ClienteUpdate(BaseModel):
     ativo: Optional[bool] = None
 
 
-class ClienteResponse(ClienteBase):
+class ClienteResponse(BaseModel):
     id: int
+    nome: str
+    razao_social: Optional[str] = None
+    email: str
+    identificacao: str
+    tipo_pessoa: str  # ✅ String simples, sem Enum
+    telefone: str
+    whatsapp: Optional[str] = None
+    data_nascimento: Optional[date] = None
+    logradouro: Optional[str] = None
+    numero: Optional[str] = None
+    complemento: Optional[str] = None
+    bairro: Optional[str] = None
+    cidade: Optional[str] = None
+    uf: Optional[str] = None
+    cep: Optional[str] = None
+    inscricao_estadual: Optional[str] = None
+    inscricao_municipal: Optional[str] = None
+    indicado_por: Optional[str] = None
     ativo: bool
     created_at: datetime
     updated_at: datetime

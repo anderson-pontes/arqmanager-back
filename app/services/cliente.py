@@ -65,6 +65,11 @@ class ClienteService:
             raise NotFoundException(f"Cliente {cliente_id} não encontrado")
         return True
     
-    def count(self, ativo: Optional[bool] = None) -> int:
-        """Conta total de clientes"""
-        return self.repository.count(ativo)
+    def count(
+        self, 
+        ativo: Optional[bool] = None,
+        tipo_pessoa: Optional[str] = None,
+        search: Optional[str] = None
+    ) -> int:
+        """Conta total de clientes com filtros"""
+        return self.repository.count(ativo, tipo_pessoa, search)
