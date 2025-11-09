@@ -60,9 +60,15 @@ class ClienteService:
             raise NotFoundException(f"Cliente {cliente_id} não encontrado")
         return ClienteResponse.from_orm(db_cliente, self.db)
     
-    def delete(self, cliente_id: int) -> bool:
-        """Remove cliente (soft delete)"""
-        success = self.repository.delete(cliente_id)
+    def delete(self, cliente_id: int, permanent: bool = False) -> bool:
+        """
+        Remove cliente
+        
+        Args:
+            cliente_id: ID do cliente
+            permanent: Se True, remove permanentemente. Se False, soft delete (marca como inativo)
+        """
+        success = self.repository.delete(cliente_id, permanent=permanent)
         if not success:
             raise NotFoundException(f"Cliente {cliente_id} não encontrado")
         return True

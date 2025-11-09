@@ -111,14 +111,19 @@ def update_cliente(
 @router.delete("/{cliente_id}", status_code=204)
 def delete_cliente(
     cliente_id: int,
+    permanent: bool = Query(False, description="Se True, exclui permanentemente do banco"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Remove um cliente (soft delete)
+    Remove um cliente
+    
+    Parâmetros:
+    - permanent: False = Soft delete (marca como inativo)
+    - permanent: True = Hard delete (remove do banco permanentemente)
     """
     service = ClienteService(db)
-    service.delete(cliente_id)
+    service.delete(cliente_id, permanent=permanent)
 
 
 @router.get("/stats/count")

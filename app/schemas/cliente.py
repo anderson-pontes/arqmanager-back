@@ -11,9 +11,9 @@ class TipoPessoaEnum(str, Enum):
 
 class ClienteCreate(BaseModel):
     nome: str
-    email: Optional[str] = None
-    telefone: Optional[str] = None
-    cpf_cnpj: Optional[str] = None
+    email: str
+    telefone: str
+    cpf_cnpj: str
     tipo_pessoa: str = "fisica"
     data_nascimento: Optional[date] = None
     endereco: Optional[str] = None
@@ -35,6 +35,16 @@ class ClienteCreate(BaseModel):
             }
             return tipo_map.get(v, 'Física')
         return 'Física'
+    
+    @validator('data_nascimento', pre=True)
+    def validate_data_nascimento(cls, v, values):
+        """Remove data_nascimento se for pessoa jurídica ou se for string vazia"""
+        if not v or v == '':
+            return None
+        # Se for pessoa jurídica, não deve ter data de nascimento
+        if values.get('tipo_pessoa') in ['juridica', 'Jurídica']:
+            return None
+        return v
 
 
 class ClienteUpdate(BaseModel):
@@ -62,6 +72,16 @@ class ClienteUpdate(BaseModel):
                 'Jurídica': 'Jurídica'
             }
             return tipo_map.get(v, v)
+        return v
+    
+    @validator('data_nascimento', pre=True)
+    def validate_data_nascimento(cls, v, values):
+        """Remove data_nascimento se for pessoa jurídica ou se for string vazia"""
+        if not v or v == '':
+            return None
+        # Se for pessoa jurídica, não deve ter data de nascimento
+        if values.get('tipo_pessoa') in ['juridica', 'Jurídica']:
+            return None
         return v
 
 

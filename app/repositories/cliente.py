@@ -101,13 +101,25 @@ class ClienteRepository:
         self.db.refresh(db_cliente)
         return db_cliente
     
-    def delete(self, cliente_id: int) -> bool:
-        """Remove cliente (soft delete)"""
+    def delete(self, cliente_id: int, permanent: bool = False) -> bool:
+        """
+        Remove cliente
+        
+        Args:
+            cliente_id: ID do cliente
+            permanent: Se True, remove permanentemente. Se False, soft delete (marca como inativo)
+        """
         db_cliente = self.get_by_id(cliente_id)
         if not db_cliente:
             return False
         
-        db_cliente.ativo = False
+        if permanent:
+            # Hard delete - remove do banco permanentemente
+            self.db.delete(db_cliente)
+        else:
+            # Soft delete - marca como inativo
+            db_cliente.ativo = False
+        
         self.db.commit()
         return True
     
