@@ -15,6 +15,7 @@ class ClienteCreate(BaseModel):
     telefone: Optional[str] = None
     cpf_cnpj: Optional[str] = None
     tipo_pessoa: str = "fisica"
+    data_nascimento: Optional[date] = None
     endereco: Optional[str] = None
     cidade: Optional[str] = None
     estado: Optional[str] = None
@@ -42,6 +43,7 @@ class ClienteUpdate(BaseModel):
     telefone: Optional[str] = None
     cpf_cnpj: Optional[str] = None
     tipo_pessoa: Optional[str] = None
+    data_nascimento: Optional[date] = None
     endereco: Optional[str] = None
     cidade: Optional[str] = None
     estado: Optional[str] = None
@@ -70,6 +72,7 @@ class ClienteResponse(BaseModel):
     telefone: Optional[str] = None
     cpf_cnpj: Optional[str] = None
     tipo_pessoa: str
+    data_nascimento: Optional[date] = None
     endereco: Optional[str] = None
     cidade: Optional[str] = None
     estado: Optional[str] = None
@@ -104,6 +107,7 @@ class ClienteResponse(BaseModel):
             telefone=obj.telefone or None,
             cpf_cnpj=obj.identificacao or None,  # Mapear identificacao -> cpf_cnpj
             tipo_pessoa=cls._normalize_tipo_pessoa(obj.tipo_pessoa),
+            data_nascimento=obj.data_nascimento,
             endereco=obj.logradouro or None,  # Mapear logradouro -> endereco
             cidade=obj.cidade or None,
             estado=obj.uf or None,  # Mapear uf -> estado

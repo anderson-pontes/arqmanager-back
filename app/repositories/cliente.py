@@ -59,6 +59,7 @@ class ClienteRepository:
             'telefone': cliente.telefone,
             'identificacao': cliente.cpf_cnpj,
             'tipo_pessoa': cliente.tipo_pessoa,
+            'data_nascimento': cliente.data_nascimento,
             'logradouro': cliente.endereco,
             'cidade': cliente.cidade,
             'uf': cliente.estado,
