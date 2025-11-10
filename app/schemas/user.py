@@ -53,7 +53,7 @@ class EscritorioResponse(EscritorioBase):
 class UserBase(BaseModel):
     nome: str
     email: EmailStr
-    cpf: str
+    cpf: Optional[str] = None  # CPF agora é opcional
     telefone: Optional[str] = None
     data_nascimento: Optional[date] = None
     perfil: PerfilEnum = PerfilEnum.COLABORADOR
@@ -61,17 +61,21 @@ class UserBase(BaseModel):
     
     @validator('cpf')
     def validate_cpf(cls, v):
+        # Se CPF for fornecido, validar
+        if v is None or v == '' or (isinstance(v, str) and not v.strip()):
+            return None
         # Remove caracteres não numéricos
-        cpf = ''.join(filter(str.isdigit, v))
-        if len(cpf) != 11:
+        cpf_clean = ''.join(filter(str.isdigit, str(v)))
+        if len(cpf_clean) != 11:
             raise ValueError('CPF deve ter 11 dígitos')
-        return cpf
+        return cpf_clean
 
 
 class UserCreate(UserBase):
     senha: str
     tipo_pix: Optional[str] = None
     chave_pix: Optional[str] = None
+    is_system_admin: Optional[bool] = False  # NOVO
     
     @validator('senha')
     def validate_senha(cls, v):
@@ -107,6 +111,7 @@ class UserResponse(UserBase):
     ultimo_acesso: Optional[date] = None
     tipo_pix: Optional[str] = None
     chave_pix: Optional[str] = None
+    is_system_admin: bool = False  # NOVO
     created_at: datetime
     updated_at: datetime
     escritorios: List[EscritorioResponse] = []
@@ -131,9 +136,34 @@ class TokenData(BaseModel):
     email: Optional[str] = None
 
 
+class EscritorioContextInfo(BaseModel):
+    """Informações de escritório disponível"""
+    id: int
+    nome_fantasia: str
+    razao_social: str
+    cor: str
+    perfil: Optional[str] = None  # Perfil do usuário neste escritório (se aplicável)
+
+
+class SetContextRequest(BaseModel):
+    """Request para definir contexto de escritório e perfil"""
+    escritorio_id: Optional[int] = None  # None para área administrativa
+    perfil: Optional[str] = None  # None para área administrativa
+
+
+class SetContextResponse(BaseModel):
+    """Response após definir contexto"""
+    access_token: str
+    escritorio_id: Optional[int] = None
+    perfil: Optional[str] = None
+    is_admin_mode: bool = False  # True quando está em modo administrativo
+
+
 class UserWithToken(BaseModel):
     user: UserResponse
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
     requires_escritorio_selection: bool = False
+    is_system_admin: bool = False  # NOVO
+    available_escritorios: List[EscritorioContextInfo] = []  # NOVO

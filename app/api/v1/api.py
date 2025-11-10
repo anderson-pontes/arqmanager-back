@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, clientes, servicos, status, projetos, propostas, movimentos, colaboradores
+from app.api.v1.endpoints import auth, users, clientes, servicos, status, projetos, propostas, movimentos, colaboradores, escritorios, admin
 
 api_router = APIRouter()
 
@@ -22,3 +22,5 @@ api_router.include_router(status.router, prefix="/status", tags=["Status"])
 api_router.include_router(projetos.router, prefix="/projetos", tags=["Projetos"])
 api_router.include_router(propostas.router, prefix="/propostas", tags=["Propostas"])
 api_router.include_router(movimentos.router, prefix="/movimentos", tags=["Financeiro"])
+api_router.include_router(escritorios.router, prefix="/escritorios", tags=["Escritórios"])
+api_router.include_router(admin.router, prefix="/admin", tags=["Administração"])

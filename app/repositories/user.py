@@ -56,13 +56,14 @@ class UserRepository:
             nome=user.nome,
             email=user.email,
             senha=hashed_password,
-            cpf=user.cpf,
+            cpf=user.cpf if user.cpf and user.cpf.strip() else None,  # CPF opcional
             telefone=user.telefone,
             data_nascimento=user.data_nascimento,
             perfil=user.perfil,
             tipo=user.tipo,
             tipo_pix=user.tipo_pix,
-            chave_pix=user.chave_pix
+            chave_pix=user.chave_pix,
+            is_system_admin=user.is_system_admin if hasattr(user, 'is_system_admin') and user.is_system_admin else False
         )
         
         self.db.add(db_user)
@@ -125,9 +126,12 @@ class EscritorioRepository:
     def __init__(self, db: Session):
         self.db = db
     
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[Escritorio]:
+    def get_all(self, skip: int = 0, limit: int = 100, ativo: Optional[bool] = None) -> List[Escritorio]:
         """Lista todos os escritórios"""
-        return self.db.query(Escritorio).filter(Escritorio.ativo == True).offset(skip).limit(limit).all()
+        query = self.db.query(Escritorio)
+        if ativo is not None:
+            query = query.filter(Escritorio.ativo == ativo)
+        return query.offset(skip).limit(limit).all()
     
     def get_by_id(self, escritorio_id: int) -> Optional[Escritorio]:
         """Busca escritório por ID"""

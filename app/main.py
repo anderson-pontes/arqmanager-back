@@ -1,6 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 from app.core.config import settings
 from app.api.v1.api import api_router
 
@@ -40,6 +43,26 @@ def custom_openapi():
     return app.openapi_schema
 
 app.openapi = custom_openapi
+
+# Handler para erros de validação
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handler customizado para erros de validação do Pydantic"""
+    errors = exc.errors()
+    error_messages = []
+    
+    for error in errors:
+        field = ".".join(str(loc) for loc in error.get("loc", []))
+        message = error.get("msg", "Erro de validação")
+        error_messages.append(f"{field}: {message}")
+    
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "detail": "; ".join(error_messages),
+            "errors": errors
+        }
+    )
 
 # Configure CORS
 app.add_middleware(

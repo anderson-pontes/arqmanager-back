@@ -318,3 +318,4 @@ arqmanager-front/
 
 Para dúvidas ou sugestões sobre a implementação, consulte o arquivo `PLANO_MIGRACAO_ETAPAS.md` para detalhes completos do plano de migração.
 
+

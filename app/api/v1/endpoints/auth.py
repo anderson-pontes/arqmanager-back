@@ -2,8 +2,13 @@ from fastapi import APIRouter, Depends, Body
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.services.auth import AuthService
-from app.schemas.user import UserLogin, UserWithToken, UserResponse
+from app.schemas.user import (
+    UserLogin, UserWithToken, UserResponse,
+    SetContextRequest, SetContextResponse,
+    EscritorioContextInfo
+)
 from app.api.deps import get_current_user
+from typing import List
 
 router = APIRouter()
 
@@ -21,9 +26,44 @@ def login(
     - access_token: Token de acesso (30 min)
     - refresh_token: Token de refresh (7 dias)
     - requires_escritorio_selection: Se precisa selecionar escritório
+    - is_system_admin: Se é admin do sistema
+    - available_escritorios: Lista de escritórios disponíveis
     """
     service = AuthService(db)
     return service.login(credentials)
+
+
+@router.post("/set-context", response_model=SetContextResponse)
+def set_context(
+    context: SetContextRequest,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Define o contexto de escritório e perfil para o usuário
+    Retorna novo access_token com contexto incluído
+    
+    Se escritorio_id for None, define contexto de área administrativa (apenas para admin do sistema)
+    """
+    service = AuthService(db)
+    result = service.set_context(
+        current_user["id"],
+        context.escritorio_id,
+        context.perfil
+    )
+    return SetContextResponse(**result)
+
+
+@router.get("/available-escritorios", response_model=List[EscritorioContextInfo])
+def get_available_escritorios(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Retorna lista de escritórios disponíveis para o usuário
+    """
+    service = AuthService(db)
+    return service.get_available_escritorios(current_user["id"])
 
 
 @router.post("/refresh")

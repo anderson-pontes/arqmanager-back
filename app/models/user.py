@@ -42,7 +42,7 @@ class User(BaseModel, TimestampMixin):
     nome = Column(String(255), nullable=False, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     senha = Column(String(255), nullable=False)  # Hash da senha
-    cpf = Column(String(14), unique=True, nullable=False, index=True)
+    cpf = Column(String(14), unique=True, nullable=True, index=True)  # CPF agora é opcional
     telefone = Column(String(20))
     data_nascimento = Column(Date)
     perfil = Column(String(50), default="Colaborador")  # Admin, Gerente, Colaborador
@@ -50,6 +50,7 @@ class User(BaseModel, TimestampMixin):
     ativo = Column(Boolean, default=True)
     foto = Column(String(500))
     ultimo_acesso = Column(Date)
+    is_system_admin = Column(Boolean, default=False)  # Admin do sistema
     
     # PIX (opcional)
     tipo_pix = Column(String(20))
