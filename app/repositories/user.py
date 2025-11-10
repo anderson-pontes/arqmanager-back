@@ -83,6 +83,11 @@ class UserRepository:
         if 'senha' in update_data and update_data['senha']:
             update_data['senha'] = get_password_hash(update_data['senha'])
         
+        # Se CPF foi fornecido, tratar como opcional
+        if 'cpf' in update_data:
+            if update_data['cpf'] is None or (isinstance(update_data['cpf'], str) and not update_data['cpf'].strip()):
+                update_data['cpf'] = None
+        
         for field, value in update_data.items():
             setattr(db_user, field, value)
         
@@ -140,3 +145,141 @@ class EscritorioRepository:
     def get_by_documento(self, documento: str) -> Optional[Escritorio]:
         """Busca escritório por documento (CNPJ)"""
         return self.db.query(Escritorio).filter(Escritorio.documento == documento).first()
+    
+    def update(self, escritorio_id: int, escritorio_data: dict) -> Optional[Escritorio]:
+        """Atualiza escritório"""
+        escritorio = self.get_by_id(escritorio_id)
+        if not escritorio:
+            return None
+        
+        for field, value in escritorio_data.items():
+            setattr(escritorio, field, value)
+        
+        self.db.commit()
+        self.db.refresh(escritorio)
+        return escritorio
+    
+    def delete(self, escritorio_id: int, permanent: bool = False) -> bool:
+        """
+        Remove escritório
+        
+        Args:
+            escritorio_id: ID do escritório
+            permanent: Se True, remove permanentemente. Se False, soft delete (marca como inativo)
+        """
+        from app.models.user import User, user_escritorio
+        
+        escritorio = self.get_by_id(escritorio_id)
+        if not escritorio:
+            return False
+        
+        if permanent:
+            # Hard delete - remove do banco permanentemente
+            # IMPORTANTE: Excluir todos os dados relacionados ao escritório
+            
+            # 1. Desativar/Excluir usuários que só têm acesso a este escritório
+            usuarios_vinculados = (
+                self.db.query(User)
+                .join(user_escritorio, User.id == user_escritorio.c.colaborador_id)
+                .filter(user_escritorio.c.escritorio_id == escritorio_id)
+                .all()
+            )
+            
+            for usuario in usuarios_vinculados:
+                # Verificar se o usuário tem acesso a outros escritórios
+                outros_escritorios_count = self.db.execute(
+                    text("""
+                        SELECT COUNT(*) 
+                        FROM colaborador_escritorio 
+                        WHERE colaborador_id = :user_id 
+                        AND escritorio_id != :escritorio_id
+                    """),
+                    {"user_id": usuario.id, "escritorio_id": escritorio_id}
+                ).scalar()
+                
+                # Se não tiver outros escritórios e não for admin do sistema, excluir o usuário
+                if outros_escritorios_count == 0 and not usuario.is_system_admin:
+                    # Remover relacionamentos restantes do usuário
+                    self.db.execute(
+                        text("DELETE FROM colaborador_escritorio WHERE colaborador_id = :user_id"),
+                        {"user_id": usuario.id}
+                    )
+                    # Excluir o usuário
+                    self.db.delete(usuario)
+            
+            # 2. Remover relacionamentos com colaboradores
+            self.db.execute(
+                text("DELETE FROM colaborador_escritorio WHERE escritorio_id = :escritorio_id"),
+                {"escritorio_id": escritorio_id}
+            )
+            
+            # 3. Excluir movimentações de contas bancárias do escritório
+            # Usar subquery para excluir todas as movimentações das contas do escritório
+            self.db.execute(
+                text("""
+                    DELETE FROM conta_movimentacao 
+                    WHERE conta_bancaria_id IN (
+                        SELECT id FROM conta_bancaria WHERE escritorio_id = :escritorio_id
+                    )
+                """),
+                {"escritorio_id": escritorio_id}
+            )
+            
+            # 4. Excluir contas bancárias do escritório
+            self.db.execute(
+                text("DELETE FROM conta_bancaria WHERE escritorio_id = :escritorio_id"),
+                {"escritorio_id": escritorio_id}
+            )
+            
+            # 5. Excluir plano de contas do escritório
+            self.db.execute(
+                text("DELETE FROM plano_contas WHERE escritorio_id = :escritorio_id"),
+                {"escritorio_id": escritorio_id}
+            )
+            
+            # 6. Excluir o escritório
+            self.db.delete(escritorio)
+        else:
+            # Soft delete - marca como inativo
+            escritorio.ativo = False
+            
+            # Desativar todos os usuários vinculados que não têm outros escritórios
+            usuarios_vinculados = (
+                self.db.query(User)
+                .join(user_escritorio, User.id == user_escritorio.c.colaborador_id)
+                .filter(
+                    user_escritorio.c.escritorio_id == escritorio_id,
+                    user_escritorio.c.ativo == True
+                )
+                .all()
+            )
+            
+            for usuario in usuarios_vinculados:
+                # Verificar se o usuário tem acesso a outros escritórios ativos
+                outros_escritorios_count = self.db.execute(
+                    text("""
+                        SELECT COUNT(*) 
+                        FROM colaborador_escritorio 
+                        WHERE colaborador_id = :user_id 
+                        AND escritorio_id != :escritorio_id 
+                        AND ativo = true
+                    """),
+                    {"user_id": usuario.id, "escritorio_id": escritorio_id}
+                ).scalar()
+                
+                # Se não tiver outros escritórios ativos, desativar o usuário
+                if outros_escritorios_count == 0 and not usuario.is_system_admin:
+                    usuario.ativo = False
+            
+            # Desativar o vínculo na tabela de associação
+            self.db.execute(
+                text("""
+                    UPDATE colaborador_escritorio 
+                    SET ativo = false 
+                    WHERE escritorio_id = :escritorio_id AND ativo = true
+                """),
+                {"escritorio_id": escritorio_id}
+            )
+        
+        self.db.commit()
+        return True
