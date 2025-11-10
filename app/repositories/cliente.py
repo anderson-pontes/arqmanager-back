@@ -11,14 +11,15 @@ class ClienteRepository:
     
     def get_all(
         self, 
+        escritorio_id: int,
         skip: int = 0, 
         limit: int = 100,
         ativo: Optional[bool] = None,
         tipo_pessoa: Optional[str] = None,
         search: Optional[str] = None
     ) -> List[Cliente]:
-        """Lista todos os clientes com filtros"""
-        query = self.db.query(Cliente)
+        """Lista todos os clientes com filtros, isolados por escritório"""
+        query = self.db.query(Cliente).filter(Cliente.escritorio_id == escritorio_id)
         
         if ativo is not None:
             query = query.filter(Cliente.ativo == ativo)
@@ -38,20 +39,29 @@ class ClienteRepository:
         
         return query.offset(skip).limit(limit).all()
     
-    def get_by_id(self, cliente_id: int) -> Optional[Cliente]:
-        """Busca cliente por ID"""
-        return self.db.query(Cliente).filter(Cliente.id == cliente_id).first()
+    def get_by_id(self, cliente_id: int, escritorio_id: int) -> Optional[Cliente]:
+        """Busca cliente por ID, garantindo que pertence ao escritório"""
+        return self.db.query(Cliente).filter(
+            Cliente.id == cliente_id,
+            Cliente.escritorio_id == escritorio_id
+        ).first()
     
-    def get_by_email(self, email: str) -> Optional[Cliente]:
-        """Busca cliente por email"""
-        return self.db.query(Cliente).filter(Cliente.email == email).first()
+    def get_by_email(self, email: str, escritorio_id: int) -> Optional[Cliente]:
+        """Busca cliente por email, garantindo que pertence ao escritório"""
+        return self.db.query(Cliente).filter(
+            Cliente.email == email,
+            Cliente.escritorio_id == escritorio_id
+        ).first()
     
-    def get_by_identificacao(self, identificacao: str) -> Optional[Cliente]:
-        """Busca cliente por CPF/CNPJ"""
-        return self.db.query(Cliente).filter(Cliente.identificacao == identificacao).first()
+    def get_by_identificacao(self, identificacao: str, escritorio_id: int) -> Optional[Cliente]:
+        """Busca cliente por CPF/CNPJ, garantindo que pertence ao escritório"""
+        return self.db.query(Cliente).filter(
+            Cliente.identificacao == identificacao,
+            Cliente.escritorio_id == escritorio_id
+        ).first()
     
-    def create(self, cliente: ClienteCreate) -> Cliente:
-        """Cria novo cliente"""
+    def create(self, cliente: ClienteCreate, escritorio_id: int) -> Cliente:
+        """Cria novo cliente, vinculado ao escritório"""
         # Mapear campos do frontend para o banco
         cliente_data = {
             'nome': cliente.nome,
@@ -65,7 +75,8 @@ class ClienteRepository:
             'uf': cliente.estado,
             'cep': cliente.cep,
             'indicado_por': cliente.observacoes,
-            'ativo': cliente.ativo if cliente.ativo is not None else True
+            'ativo': cliente.ativo if cliente.ativo is not None else True,
+            'escritorio_id': escritorio_id
         }
         
         db_cliente = Cliente(**cliente_data)
@@ -74,9 +85,9 @@ class ClienteRepository:
         self.db.refresh(db_cliente)
         return db_cliente
     
-    def update(self, cliente_id: int, cliente: ClienteUpdate) -> Optional[Cliente]:
-        """Atualiza cliente"""
-        db_cliente = self.get_by_id(cliente_id)
+    def update(self, cliente_id: int, cliente: ClienteUpdate, escritorio_id: int) -> Optional[Cliente]:
+        """Atualiza cliente, garantindo que pertence ao escritório"""
+        db_cliente = self.get_by_id(cliente_id, escritorio_id)
         if not db_cliente:
             return None
         
@@ -101,15 +112,16 @@ class ClienteRepository:
         self.db.refresh(db_cliente)
         return db_cliente
     
-    def delete(self, cliente_id: int, permanent: bool = False) -> bool:
+    def delete(self, cliente_id: int, escritorio_id: int, permanent: bool = False) -> bool:
         """
-        Remove cliente
+        Remove cliente, garantindo que pertence ao escritório
         
         Args:
             cliente_id: ID do cliente
+            escritorio_id: ID do escritório
             permanent: Se True, remove permanentemente. Se False, soft delete (marca como inativo)
         """
-        db_cliente = self.get_by_id(cliente_id)
+        db_cliente = self.get_by_id(cliente_id, escritorio_id)
         if not db_cliente:
             return False
         
@@ -124,13 +136,14 @@ class ClienteRepository:
         return True
     
     def count(
-        self, 
+        self,
+        escritorio_id: int,
         ativo: Optional[bool] = None,
         tipo_pessoa: Optional[str] = None,
         search: Optional[str] = None
     ) -> int:
-        """Conta total de clientes com filtros"""
-        query = self.db.query(Cliente)
+        """Conta total de clientes com filtros, isolados por escritório"""
+        query = self.db.query(Cliente).filter(Cliente.escritorio_id == escritorio_id)
         
         if ativo is not None:
             query = query.filter(Cliente.ativo == ativo)

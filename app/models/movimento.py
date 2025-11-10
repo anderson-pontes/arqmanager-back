@@ -11,6 +11,7 @@ class Movimento(Base, TimestampMixin):
 
     id = Column(Integer, primary_key=True, index=True)
     projeto_id = Column(Integer, ForeignKey("projetos.id"), nullable=True)
+    escritorio_id = Column(Integer, ForeignKey("escritorio.id"), nullable=False, index=True)
     
     # Tipo: 1=Despesa, 2=Receita, 3=Transferência, etc
     tipo = Column(Integer, nullable=False)  # cod_despesa_receita_tipo

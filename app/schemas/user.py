@@ -5,9 +5,10 @@ from enum import Enum
 
 
 class PerfilEnum(str, Enum):
-    ADMIN = "Admin"
-    GERENTE = "Gerente"
-    COLABORADOR = "Colaborador"
+    ADMIN = "Admin"  # Para admins do sistema e escritório (compatibilidade)
+    ADMINISTRADOR = "Administrador"  # Para colaboradores do escritório
+    COORDENADOR_PROJETOS = "Coordenador de Projetos"
+    PRODUCAO = "Produção"
 
 
 class TipoColaboradorEnum(str, Enum):
@@ -117,8 +118,30 @@ class UserBase(BaseModel):
     cpf: Optional[str] = None  # CPF agora é opcional
     telefone: Optional[str] = None
     data_nascimento: Optional[date] = None
-    perfil: PerfilEnum = PerfilEnum.COLABORADOR
+    perfil: PerfilEnum = PerfilEnum.PRODUCAO
     tipo: TipoColaboradorEnum = TipoColaboradorEnum.GERAL
+    
+    @validator('perfil', pre=True)
+    def validate_perfil(cls, v):
+        """Aceita string ou enum, converte para enum"""
+        if v is None:
+            return PerfilEnum.PRODUCAO
+        if isinstance(v, PerfilEnum):
+            return v
+        # Se for string, tenta encontrar no enum
+        if isinstance(v, str):
+            v_clean = v.strip()
+            # Tenta encontrar pelo valor exato
+            for enum_item in PerfilEnum:
+                if enum_item.value == v_clean:
+                    return enum_item
+            # Tenta encontrar ignorando case
+            for enum_item in PerfilEnum:
+                if enum_item.value.lower() == v_clean.lower():
+                    return enum_item
+            # Se não encontrar, retorna o padrão
+            return PerfilEnum.PRODUCAO
+        return v
     
     @validator('cpf')
     def validate_cpf(cls, v):

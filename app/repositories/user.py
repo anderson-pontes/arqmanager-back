@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, text
-from app.models.user import User, Escritorio
+from app.models.user import User, Escritorio, user_escritorio
 from app.schemas.user import UserCreate, UserUpdate
 from app.core.security import get_password_hash
 from typing import List, Optional
@@ -12,13 +12,32 @@ class UserRepository:
     
     def get_all(
         self, 
+        escritorio_id: Optional[int] = None,
         skip: int = 0, 
         limit: int = 100,
         ativo: Optional[bool] = None,
         search: Optional[str] = None
     ) -> List[User]:
-        """Lista todos os usuários com filtros"""
-        query = self.db.query(User).options(joinedload(User.escritorios))
+        """
+        Lista todos os usuários com filtros
+        
+        Args:
+            escritorio_id: Se fornecido, filtra apenas colaboradores vinculados ao escritório
+            skip: Número de registros a pular
+            limit: Número máximo de registros
+            ativo: Filtrar por status ativo/inativo
+            search: Buscar por nome, email ou CPF
+        """
+        if escritorio_id:
+            # Filtrar apenas colaboradores vinculados ao escritório
+            query = self.db.query(User).join(
+                user_escritorio, User.id == user_escritorio.c.colaborador_id
+            ).filter(
+                user_escritorio.c.escritorio_id == escritorio_id
+            ).distinct().options(joinedload(User.escritorios))
+        else:
+            # Listar todos os usuários (para admin do sistema)
+            query = self.db.query(User).options(joinedload(User.escritorios))
         
         if ativo is not None:
             query = query.filter(User.ativo == ativo)
@@ -51,6 +70,10 @@ class UserRepository:
         # Hash da senha
         hashed_password = get_password_hash(user.senha)
         
+        # Converter perfil enum para string se necessário
+        perfil_value = user.perfil.value if hasattr(user.perfil, 'value') else str(user.perfil)
+        tipo_value = user.tipo.value if hasattr(user.tipo, 'value') else str(user.tipo)
+        
         # Criar usuário
         db_user = User(
             nome=user.nome,
@@ -59,8 +82,8 @@ class UserRepository:
             cpf=user.cpf if user.cpf and user.cpf.strip() else None,  # CPF opcional
             telefone=user.telefone,
             data_nascimento=user.data_nascimento,
-            perfil=user.perfil,
-            tipo=user.tipo,
+            perfil=perfil_value,
+            tipo=tipo_value,
             tipo_pix=user.tipo_pix,
             chave_pix=user.chave_pix,
             is_system_admin=user.is_system_admin if hasattr(user, 'is_system_admin') and user.is_system_admin else False
@@ -122,8 +145,14 @@ class UserRepository:
         self.db.commit()
         return True
     
-    def count(self) -> int:
-        """Conta total de usuários"""
+    def count(self, escritorio_id: Optional[int] = None) -> int:
+        """Conta total de usuários, opcionalmente filtrado por escritório"""
+        if escritorio_id:
+            return self.db.query(User).join(
+                user_escritorio, User.id == user_escritorio.c.colaborador_id
+            ).filter(
+                user_escritorio.c.escritorio_id == escritorio_id
+            ).distinct().count()
         return self.db.query(User).count()
 
 

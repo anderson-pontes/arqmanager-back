@@ -14,7 +14,8 @@ class MovimentoRepository:
         self.db = db
     
     def get_all(
-        self, 
+        self,
+        escritorio_id: int,
         skip: int = 0, 
         limit: int = 100,
         tipo: Optional[int] = None,
@@ -23,7 +24,8 @@ class MovimentoRepository:
         data_fim: Optional[date] = None,
         ativo: Optional[bool] = None
     ) -> List[Movimento]:
-        query = self.db.query(Movimento).options(joinedload(Movimento.projeto))
+        """Lista todos os movimentos com filtros, isolados por escritório"""
+        query = self.db.query(Movimento).filter(Movimento.escritorio_id == escritorio_id).options(joinedload(Movimento.projeto))
         
         if tipo:
             query = query.filter(Movimento.tipo == tipo)
@@ -42,20 +44,28 @@ class MovimentoRepository:
         
         return query.order_by(Movimento.data_entrada.desc()).offset(skip).limit(limit).all()
     
-    def get_by_id(self, movimento_id: int) -> Optional[Movimento]:
+    def get_by_id(self, movimento_id: int, escritorio_id: int) -> Optional[Movimento]:
+        """Busca movimento por ID, garantindo que pertence ao escritório"""
         return self.db.query(Movimento).options(
             joinedload(Movimento.projeto)
-        ).filter(Movimento.id == movimento_id).first()
+        ).filter(
+            Movimento.id == movimento_id,
+            Movimento.escritorio_id == escritorio_id
+        ).first()
     
-    def create(self, movimento_data: MovimentoCreate) -> Movimento:
-        movimento = Movimento(**movimento_data.model_dump())
+    def create(self, movimento_data: MovimentoCreate, escritorio_id: int) -> Movimento:
+        """Cria novo movimento, vinculado ao escritório"""
+        movimento_dict = movimento_data.model_dump()
+        movimento_dict['escritorio_id'] = escritorio_id
+        movimento = Movimento(**movimento_dict)
         self.db.add(movimento)
         self.db.commit()
         self.db.refresh(movimento)
         return movimento
     
-    def update(self, movimento_id: int, movimento_data: MovimentoUpdate) -> Optional[Movimento]:
-        movimento = self.get_by_id(movimento_id)
+    def update(self, movimento_id: int, movimento_data: MovimentoUpdate, escritorio_id: int) -> Optional[Movimento]:
+        """Atualiza movimento, garantindo que pertence ao escritório"""
+        movimento = self.get_by_id(movimento_id, escritorio_id)
         if not movimento:
             return None
         
@@ -67,8 +77,9 @@ class MovimentoRepository:
         self.db.refresh(movimento)
         return movimento
     
-    def delete(self, movimento_id: int) -> bool:
-        movimento = self.get_by_id(movimento_id)
+    def delete(self, movimento_id: int, escritorio_id: int) -> bool:
+        """Remove movimento, garantindo que pertence ao escritório"""
+        movimento = self.get_by_id(movimento_id, escritorio_id)
         if not movimento:
             return False
         
@@ -78,14 +89,18 @@ class MovimentoRepository:
     
     def get_resumo(
         self,
+        escritorio_id: int,
         data_inicio: Optional[date] = None,
         data_fim: Optional[date] = None,
         tipo: Optional[int] = None
     ) -> dict:
-        """Retorna resumo financeiro"""
+        """Retorna resumo financeiro, isolado por escritório"""
         query = self.db.query(
             func.sum(Movimento.valor).label('total')
-        ).filter(Movimento.ativo == True)
+        ).filter(
+            Movimento.ativo == True,
+            Movimento.escritorio_id == escritorio_id
+        )
         
         if data_inicio:
             query = query.filter(Movimento.data_entrada >= data_inicio)
@@ -99,9 +114,10 @@ class MovimentoRepository:
         result = query.first()
         return {"total": float(result.total) if result.total else 0.0}
     
-    def get_por_mes(self, ano: int, mes: int) -> List[Movimento]:
-        """Retorna movimentos de um mês específico"""
+    def get_por_mes(self, escritorio_id: int, ano: int, mes: int) -> List[Movimento]:
+        """Retorna movimentos de um mês específico, isolados por escritório"""
         return self.db.query(Movimento).filter(
+            Movimento.escritorio_id == escritorio_id,
             extract('year', Movimento.data_entrada) == ano,
             extract('month', Movimento.data_entrada) == mes,
             Movimento.ativo == True

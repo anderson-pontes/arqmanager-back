@@ -13,6 +13,7 @@ class Proposta(Base, TimestampMixin):
     cliente_id = Column(Integer, ForeignKey("cliente.id"), nullable=False)
     servico_id = Column(Integer, ForeignKey("servicos.id"), nullable=False)
     status_id = Column(Integer, ForeignKey("status.id"), nullable=True)
+    escritorio_id = Column(Integer, ForeignKey("escritorio.id"), nullable=False, index=True)
     
     # Informações básicas
     nome = Column(String(255))

@@ -55,7 +55,7 @@ class User(BaseModel, TimestampMixin):
     cpf = Column(String(14), unique=True, nullable=True, index=True)  # CPF agora é opcional
     telefone = Column(String(20))
     data_nascimento = Column(Date)
-    perfil = Column(String(50), default="Colaborador")  # Admin, Gerente, Colaborador
+    perfil = Column(String(50), default="Produção")  # Administrador, Coordenador de Projetos, Produção
     tipo = Column(String(20), default="Geral")  # Geral, Terceirizado
     ativo = Column(Boolean, default=True)
     foto = Column(String(500))

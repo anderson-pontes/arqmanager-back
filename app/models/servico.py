@@ -1,7 +1,7 @@
 """
 Modelo de Serviço
 """
-from sqlalchemy import Column, Integer, String, Numeric, Boolean, Text
+from sqlalchemy import Column, Integer, String, Numeric, Boolean, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from app.models.base import Base, TimestampMixin
 
@@ -17,6 +17,7 @@ class Servico(Base, TimestampMixin):
     unidade = Column(String(50))  # m², unidade, hora, etc.
     codigo_plano_contas = Column(String(50))  # Código do plano de contas
     ativo = Column(Boolean, default=True)
+    escritorio_id = Column(Integer, ForeignKey("escritorio.id"), nullable=False, index=True)
     
     # Relacionamentos
     etapas = relationship("Etapa", back_populates="servico", cascade="all, delete-orphan")

@@ -15,6 +15,7 @@ class ProjetoDocumento(BaseModel, TimestampMixin):
     extensao = Column(String(10))
     observacao = Column(Text)
     ativo = Column(Boolean, default=True)
+    escritorio_id = Column(Integer, ForeignKey('escritorio.id'), nullable=False, index=True)
     
     # Relacionamentos
     # projeto = relationship("Projeto", back_populates="documentos")

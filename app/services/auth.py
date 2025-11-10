@@ -36,7 +36,7 @@ class AuthService:
             raise UnauthorizedException("Email ou senha incorretos")
         
         # Verificar se é admin do sistema
-        is_system_admin = user.perfil == "Admin" and (user.is_system_admin or False)
+        is_system_admin = (user.perfil == "Admin" or user.perfil == "Administrador") and (user.is_system_admin or False)
         
         # Preparar lista de escritórios disponíveis
         available_escritorios: List[EscritorioContextInfo] = []
@@ -115,7 +115,7 @@ class AuthService:
             raise UnauthorizedException("Usuário inativo")
         
         # Verificar se é admin do sistema
-        is_system_admin = user.perfil == "Admin" and (user.is_system_admin or False)
+        is_system_admin = (user.perfil == "Admin" or user.perfil == "Administrador") and (user.is_system_admin or False)
         
         # Se não tem escritório_id, é modo administrativo
         is_admin_mode = escritorio_id is None
@@ -172,7 +172,7 @@ class AuthService:
         if not user:
             raise NotFoundException("Usuário não encontrado")
         
-        is_system_admin = user.perfil == "Admin" and (user.is_system_admin or False)
+        is_system_admin = (user.perfil == "Admin" or user.perfil == "Administrador") and (user.is_system_admin or False)
         
         if is_system_admin:
             # Admin: todos os escritórios
@@ -241,7 +241,7 @@ class AuthService:
         new_access_token = create_access_token(data={
             "sub": str(user_id), 
             "email": email,
-            "is_system_admin": user.perfil == "Admin" and (user.is_system_admin or False)
+            "is_system_admin": user.perfil == "Administrador" and (user.is_system_admin or False)
         })
         
         return {

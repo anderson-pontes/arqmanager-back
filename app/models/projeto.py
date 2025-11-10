@@ -14,6 +14,7 @@ class Projeto(Base, TimestampMixin):
     servico_id = Column(Integer, ForeignKey("servicos.id"), nullable=False)
     proposta_id = Column(Integer, nullable=True)  # FK para proposta (fase futura)
     status_id = Column(Integer, ForeignKey("status.id"), nullable=True)
+    escritorio_id = Column(Integer, ForeignKey("escritorio.id"), nullable=False, index=True)
     
     # Informações básicas
     descricao = Column(Text, nullable=False)

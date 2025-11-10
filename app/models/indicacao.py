@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, Text
+from sqlalchemy import Column, String, Boolean, Text, Integer, ForeignKey
 from app.models.base import BaseModel, TimestampMixin
 
 
@@ -12,6 +12,7 @@ class Indicacao(BaseModel, TimestampMixin):
     email = Column(String(255))
     observacao = Column(Text)
     ativo = Column(Boolean, default=True)
+    escritorio_id = Column(Integer, ForeignKey('escritorio.id'), nullable=False, index=True)
     
     def __repr__(self):
         return f"<Indicacao {self.nome}>"

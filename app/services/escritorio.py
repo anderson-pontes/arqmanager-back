@@ -5,6 +5,7 @@ from app.schemas.user import EscritorioCreate, UserCreate
 from app.models.user import Escritorio, User
 from app.core.security import get_password_hash
 from app.core.exceptions import NotFoundException
+from app.services.seeds import EscritorioSeeds
 from typing import Dict
 
 
@@ -64,13 +65,18 @@ class EscritorioService:
             {"user_id": admin_user.id, "escritorio_id": db_escritorio.id}
         )
         
+        # Criar seeds (dados iniciais) para o escritório
+        seeds = EscritorioSeeds(self.db)
+        seeds_info = seeds.criar_todos_seeds(db_escritorio.id)
+        
         self.db.commit()
         self.db.refresh(db_escritorio)
         self.db.refresh(admin_user)
         
         return {
             "escritorio": db_escritorio,
-            "admin": admin_user
+            "admin": admin_user,
+            "seeds": seeds_info
         }
     
     def get_by_id(self, escritorio_id: int) -> Escritorio:

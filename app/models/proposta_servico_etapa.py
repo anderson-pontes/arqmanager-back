@@ -14,6 +14,7 @@ class PropostaServicoEtapa(BaseModel, TimestampMixin):
     data_prevista = Column(Date)
     data_conclusao = Column(Date)
     observacao = Column(Text)
+    escritorio_id = Column(Integer, ForeignKey('escritorio.id'), nullable=False, index=True)
     
     # Relacionamentos
     # proposta = relationship("Proposta", back_populates="etapas")

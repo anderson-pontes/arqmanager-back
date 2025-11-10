@@ -12,13 +12,14 @@ class UserService:
     
     def get_all(
         self, 
+        escritorio_id: Optional[int] = None,
         skip: int = 0, 
         limit: int = 100,
         ativo: Optional[bool] = None,
         search: Optional[str] = None
     ) -> List[UserResponse]:
-        """Lista todos os usuários"""
-        users = self.repository.get_all(skip, limit, ativo, search)
+        """Lista todos os usuários, opcionalmente filtrado por escritório"""
+        users = self.repository.get_all(escritorio_id, skip, limit, ativo, search)
         return [UserResponse.from_orm(user) for user in users]
     
     def get_by_id(self, user_id: int) -> UserResponse:
@@ -35,10 +36,11 @@ class UserService:
         if existing_email:
             raise ConflictException("Email já cadastrado")
         
-        # Verificar se CPF já existe
-        existing_cpf = self.repository.get_by_cpf(user.cpf)
-        if existing_cpf:
-            raise ConflictException("CPF já cadastrado")
+        # Verificar se CPF já existe (apenas se fornecido)
+        if user.cpf and user.cpf.strip():
+            existing_cpf = self.repository.get_by_cpf(user.cpf)
+            if existing_cpf:
+                raise ConflictException("CPF já cadastrado")
         
         db_user = self.repository.create(user)
         return UserResponse.from_orm(db_user)
@@ -63,6 +65,6 @@ class UserService:
             raise NotFoundException(f"Usuário {user_id} não encontrado")
         return True
     
-    def count(self) -> int:
-        """Conta total de usuários"""
-        return self.repository.count()
+    def count(self, escritorio_id: Optional[int] = None) -> int:
+        """Conta total de usuários, opcionalmente filtrado por escritório"""
+        return self.repository.count(escritorio_id)

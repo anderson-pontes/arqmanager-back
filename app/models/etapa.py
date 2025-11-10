@@ -15,6 +15,7 @@ class Etapa(Base, TimestampMixin):
     descricao = Column(Text)  # descricao_contrato no MySQL
     ordem = Column(Integer, default=0)
     obrigatoria = Column(Boolean, default=True)  # exibir no MySQL (invertido)
+    escritorio_id = Column(Integer, ForeignKey("escritorio.id"), nullable=False, index=True)
     
     # Relacionamentos
     servico = relationship("Servico", back_populates="etapas")

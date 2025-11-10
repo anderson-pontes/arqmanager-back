@@ -13,6 +13,7 @@ class ProjetoColaborador(Base):
     colaborador_id = Column(Integer, ForeignKey("colaborador.id"), primary_key=True)
     funcao = Column(String(100))  # Função do colaborador no projeto
     ativo = Column(Boolean, default=True)
+    escritorio_id = Column(Integer, ForeignKey("escritorio.id"), nullable=False, index=True)
     
     # Relacionamentos
     projeto = relationship("Projeto", back_populates="colaboradores")

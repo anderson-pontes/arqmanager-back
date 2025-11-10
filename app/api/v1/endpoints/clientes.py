@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.services.cliente import ClienteService
 from app.schemas.cliente import ClienteCreate, ClienteUpdate, ClienteResponse
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_escritorio
 
 router = APIRouter()
 
@@ -32,10 +32,11 @@ def list_clientes(
     tipo_pessoa: Optional[str] = None,
     search: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    escritorio_id: int = Depends(get_current_escritorio)
 ):
     """
-    Lista todos os clientes com paginação
+    Lista todos os clientes com paginação, isolados por escritório
     
     Parâmetros:
     - skip: Número de registros a pular (padrão: 0)
@@ -51,8 +52,8 @@ def list_clientes(
     - limit: Limite usado
     """
     service = ClienteService(db)
-    clientes = service.get_all(skip=skip, limit=limit, ativo=ativo, tipo_pessoa=tipo_pessoa, search=search)
-    total = service.count(ativo=ativo, tipo_pessoa=tipo_pessoa, search=search)  # ✅ Passa search para count
+    clientes = service.get_all(escritorio_id, skip=skip, limit=limit, ativo=ativo, tipo_pessoa=tipo_pessoa, search=search)
+    total = service.count(escritorio_id, ativo=ativo, tipo_pessoa=tipo_pessoa, search=search)
     
     return {
         "items": clientes,
@@ -66,32 +67,34 @@ def list_clientes(
 def create_cliente(
     cliente: ClienteCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    escritorio_id: int = Depends(get_current_escritorio)
 ):
     """
-    Cria um novo cliente
+    Cria um novo cliente, vinculado ao escritório
     
     Validações:
-    - Email único
-    - CPF/CNPJ único
+    - Email único no escritório
+    - CPF/CNPJ único no escritório
     - CPF: 11 dígitos para Pessoa Física
     - CNPJ: 14 dígitos para Pessoa Jurídica
     """
     service = ClienteService(db)
-    return service.create(cliente)
+    return service.create(cliente, escritorio_id)
 
 
 @router.get("/{cliente_id}", response_model=ClienteResponse)
 def get_cliente(
     cliente_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    escritorio_id: int = Depends(get_current_escritorio)
 ):
     """
-    Busca um cliente por ID
+    Busca um cliente por ID, garantindo que pertence ao escritório
     """
     service = ClienteService(db)
-    return service.get_by_id(cliente_id)
+    return service.get_by_id(cliente_id, escritorio_id)
 
 
 @router.put("/{cliente_id}", response_model=ClienteResponse)
@@ -99,13 +102,14 @@ def update_cliente(
     cliente_id: int,
     cliente: ClienteUpdate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    escritorio_id: int = Depends(get_current_escritorio)
 ):
     """
-    Atualiza um cliente
+    Atualiza um cliente, garantindo que pertence ao escritório
     """
     service = ClienteService(db)
-    return service.update(cliente_id, cliente)
+    return service.update(cliente_id, cliente, escritorio_id)
 
 
 @router.delete("/{cliente_id}", status_code=204)
@@ -113,33 +117,35 @@ def delete_cliente(
     cliente_id: int,
     permanent: bool = Query(False, description="Se True, exclui permanentemente do banco"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    escritorio_id: int = Depends(get_current_escritorio)
 ):
     """
-    Remove um cliente
+    Remove um cliente, garantindo que pertence ao escritório
     
     Parâmetros:
     - permanent: False = Soft delete (marca como inativo)
     - permanent: True = Hard delete (remove do banco permanentemente)
     """
     service = ClienteService(db)
-    service.delete(cliente_id, permanent=permanent)
+    service.delete(cliente_id, escritorio_id, permanent=permanent)
 
 
 @router.get("/stats/count")
 def count_clientes(
     ativo: Optional[bool] = None,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    escritorio_id: int = Depends(get_current_escritorio)
 ):
     """
-    Retorna total de clientes cadastrados
+    Retorna total de clientes cadastrados, isolados por escritório
     
     Parâmetros:
     - ativo: Contar apenas ativos (True) ou inativos (False), ou todos (None)
     """
     service = ClienteService(db)
     return {
-        "total": service.count(ativo),
+        "total": service.count(escritorio_id, ativo=ativo),
         "ativo": ativo
     }

@@ -11,26 +11,35 @@ class StatusRepository:
     def __init__(self, db: Session):
         self.db = db
     
-    def get_all(self, skip: int = 0, limit: int = 100, ativo: Optional[bool] = None) -> List[Status]:
-        query = self.db.query(Status)
+    def get_all(self, escritorio_id: int, skip: int = 0, limit: int = 100, ativo: Optional[bool] = None) -> List[Status]:
+        """Lista todos os status, isolados por escritório"""
+        query = self.db.query(Status).filter(Status.escritorio_id == escritorio_id)
         
         if ativo is not None:
             query = query.filter(Status.ativo == ativo)
         
         return query.offset(skip).limit(limit).all()
     
-    def get_by_id(self, status_id: int) -> Optional[Status]:
-        return self.db.query(Status).filter(Status.id == status_id).first()
+    def get_by_id(self, status_id: int, escritorio_id: int) -> Optional[Status]:
+        """Busca status por ID, garantindo que pertence ao escritório"""
+        return self.db.query(Status).filter(
+            Status.id == status_id,
+            Status.escritorio_id == escritorio_id
+        ).first()
     
-    def create(self, status_data: StatusCreate) -> Status:
-        status = Status(**status_data.model_dump())
+    def create(self, status_data: StatusCreate, escritorio_id: int) -> Status:
+        """Cria novo status, vinculado ao escritório"""
+        status_dict = status_data.model_dump()
+        status_dict['escritorio_id'] = escritorio_id
+        status = Status(**status_dict)
         self.db.add(status)
         self.db.commit()
         self.db.refresh(status)
         return status
     
-    def update(self, status_id: int, status_data: StatusUpdate) -> Optional[Status]:
-        status = self.get_by_id(status_id)
+    def update(self, status_id: int, status_data: StatusUpdate, escritorio_id: int) -> Optional[Status]:
+        """Atualiza status, garantindo que pertence ao escritório"""
+        status = self.get_by_id(status_id, escritorio_id)
         if not status:
             return None
         
@@ -42,8 +51,9 @@ class StatusRepository:
         self.db.refresh(status)
         return status
     
-    def delete(self, status_id: int) -> bool:
-        status = self.get_by_id(status_id)
+    def delete(self, status_id: int, escritorio_id: int) -> bool:
+        """Deleta status, garantindo que pertence ao escritório"""
+        status = self.get_by_id(status_id, escritorio_id)
         if not status:
             return False
         

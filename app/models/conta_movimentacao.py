@@ -15,6 +15,7 @@ class ContaMovimentacao(BaseModel, TimestampMixin):
     tipo = Column(String(20), nullable=False)  # receita, despesa
     saldo = Column(Numeric(10, 2))
     movimento_id = Column(Integer, ForeignKey('movimentos.id'))
+    escritorio_id = Column(Integer, ForeignKey('escritorio.id'), nullable=False, index=True)
     
     # Relacionamentos
     # conta_bancaria = relationship("ContaBancaria", back_populates="movimentacoes")

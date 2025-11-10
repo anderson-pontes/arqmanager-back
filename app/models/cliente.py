@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Date
+from sqlalchemy import Column, Integer, String, Boolean, Date, ForeignKey
 from sqlalchemy.orm import relationship
 from app.models.base import BaseModel, TimestampMixin
 
@@ -10,12 +10,13 @@ class Cliente(BaseModel, TimestampMixin):
     nome = Column(String(255), nullable=False, index=True)
     razao_social = Column(String(255))
     email = Column(String(255), nullable=False, index=True)
-    identificacao = Column(String(20), unique=True, nullable=False, index=True)  # CPF ou CNPJ
+    identificacao = Column(String(20), nullable=False, index=True)  # CPF ou CNPJ (removido unique para permitir por escritório)
     tipo_pessoa = Column(String(20), nullable=False)  # "Física" ou "Jurídica"
     telefone = Column(String(20), nullable=False)
     whatsapp = Column(String(20))
     data_nascimento = Column(Date)
     ativo = Column(Boolean, default=True)
+    escritorio_id = Column(Integer, ForeignKey('escritorio.id'), nullable=False, index=True)
     
     # Endereço
     logradouro = Column(String(255))

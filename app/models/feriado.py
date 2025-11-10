@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Date, Boolean
+from sqlalchemy import Column, String, Date, Boolean, Integer, ForeignKey
 from app.models.base import BaseModel, TimestampMixin
 
 
@@ -11,6 +11,7 @@ class Feriado(BaseModel, TimestampMixin):
     descricao = Column(String(255), nullable=False)
     tipo = Column(String(50))  # nacional, estadual, municipal
     ativo = Column(Boolean, default=True)
+    escritorio_id = Column(Integer, ForeignKey('escritorio.id'), nullable=False, index=True)
     
     def __repr__(self):
         return f"<Feriado {self.data} - {self.descricao}>"

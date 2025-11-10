@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_escritorio
 from app.repositories.projeto_repository import ProjetoRepository
 from app.schemas.projeto import (
     ProjetoCreate, ProjetoUpdate, ProjetoResponse,
@@ -25,26 +25,28 @@ def listar_projetos(
     status_id: Optional[int] = None,
     search: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    escritorio_id: int = Depends(get_current_escritorio)
 ):
-    """Lista todos os projetos"""
+    """Lista todos os projetos, isolados por escritório"""
     repo = ProjetoRepository(db)
     
     if search:
-        return repo.search(search, skip, limit)
+        return repo.search(escritorio_id, search, skip, limit)
     
-    return repo.get_all(skip, limit, ativo, cliente_id, status_id)
+    return repo.get_all(escritorio_id, skip, limit, ativo, cliente_id, status_id)
 
 
 @router.post("", response_model=ProjetoResponse, status_code=status.HTTP_201_CREATED)
 def criar_projeto(
     projeto: ProjetoCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    escritorio_id: int = Depends(get_current_escritorio)
 ):
-    """Cria um novo projeto"""
+    """Cria um novo projeto, vinculado ao escritório"""
     repo = ProjetoRepository(db)
-    return repo.create(projeto)
+    return repo.create(projeto, escritorio_id)
 
 
 @router.get("/stats/count")
@@ -53,22 +55,24 @@ def contar_projetos(
     cliente_id: Optional[int] = None,
     status_id: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    escritorio_id: int = Depends(get_current_escritorio)
 ):
-    """Retorna a contagem de projetos"""
+    """Retorna a contagem de projetos, isolados por escritório"""
     repo = ProjetoRepository(db)
-    return {"total": repo.count(ativo, cliente_id, status_id)}
+    return {"total": repo.count(escritorio_id, ativo, cliente_id, status_id)}
 
 
 @router.get("/{projeto_id}", response_model=ProjetoResponse)
 def obter_projeto(
     projeto_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    escritorio_id: int = Depends(get_current_escritorio)
 ):
-    """Obtém um projeto por ID"""
+    """Obtém um projeto por ID, garantindo que pertence ao escritório"""
     repo = ProjetoRepository(db)
-    projeto = repo.get_by_id(projeto_id)
+    projeto = repo.get_by_id(projeto_id, escritorio_id)
     
     if not projeto:
         raise HTTPException(
@@ -84,11 +88,12 @@ def atualizar_projeto(
     projeto_id: int,
     projeto_data: ProjetoUpdate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    escritorio_id: int = Depends(get_current_escritorio)
 ):
-    """Atualiza um projeto"""
+    """Atualiza um projeto, garantindo que pertence ao escritório"""
     repo = ProjetoRepository(db)
-    projeto = repo.update(projeto_id, projeto_data)
+    projeto = repo.update(projeto_id, projeto_data, escritorio_id)
     
     if not projeto:
         raise HTTPException(
@@ -103,12 +108,13 @@ def atualizar_projeto(
 def deletar_projeto(
     projeto_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    escritorio_id: int = Depends(get_current_escritorio)
 ):
-    """Deleta um projeto"""
+    """Deleta um projeto, garantindo que pertence ao escritório"""
     repo = ProjetoRepository(db)
     
-    if not repo.delete(projeto_id):
+    if not repo.delete(projeto_id, escritorio_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Projeto não encontrado"
@@ -121,13 +127,15 @@ def adicionar_colaborador(
     projeto_id: int,
     colaborador_data: ProjetoColaboradorCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    escritorio_id: int = Depends(get_current_escritorio)
 ):
-    """Adiciona um colaborador ao projeto"""
+    """Adiciona um colaborador ao projeto, garantindo que pertence ao escritório"""
     repo = ProjetoRepository(db)
     colab = repo.add_colaborador(
         projeto_id, 
         colaborador_data.colaborador_id,
+        escritorio_id,
         colaborador_data.funcao
     )
     
@@ -145,12 +153,13 @@ def remover_colaborador(
     projeto_id: int,
     colaborador_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    escritorio_id: int = Depends(get_current_escritorio)
 ):
-    """Remove um colaborador do projeto"""
+    """Remove um colaborador do projeto, garantindo que pertence ao escritório"""
     repo = ProjetoRepository(db)
     
-    if not repo.remove_colaborador(projeto_id, colaborador_id):
+    if not repo.remove_colaborador(projeto_id, colaborador_id, escritorio_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Colaborador não encontrado no projeto"

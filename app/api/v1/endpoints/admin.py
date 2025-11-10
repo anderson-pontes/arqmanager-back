@@ -132,10 +132,10 @@ def list_system_admins(
     user_repo = UserRepository(db)
     users = user_repo.get_all(skip=skip, limit=limit)
     
-    # Filtrar apenas admins do sistema
+    # Filtrar apenas admins do sistema (aceita "Admin" antigo ou "Administrador" novo)
     system_admins = [
         u for u in users 
-        if u.perfil == "Admin" and (u.is_system_admin or False)
+        if (u.perfil == "Admin" or u.perfil == "Administrador") and (u.is_system_admin or False)
     ]
     
     return [UserResponse.from_orm(u) for u in system_admins]
@@ -199,7 +199,7 @@ def update_system_admin(
     if not existing_user:
         raise HTTPException(status_code=404, detail="Administrador não encontrado")
     
-    if not (existing_user.perfil == "Admin" and existing_user.is_system_admin):
+    if not ((existing_user.perfil == "Admin" or existing_user.perfil == "Administrador") and existing_user.is_system_admin):
         raise HTTPException(
             status_code=400,
             detail="Usuário não é um administrador do sistema"
@@ -256,7 +256,7 @@ def toggle_system_admin_active(
     if not existing_user:
         raise HTTPException(status_code=404, detail="Administrador não encontrado")
     
-    if not (existing_user.perfil == "Admin" and existing_user.is_system_admin):
+    if not ((existing_user.perfil == "Admin" or existing_user.perfil == "Administrador") and existing_user.is_system_admin):
         raise HTTPException(
             status_code=400,
             detail="Usuário não é um administrador do sistema"
@@ -293,7 +293,7 @@ def delete_system_admin(
     if not existing_user:
         raise HTTPException(status_code=404, detail="Administrador não encontrado")
     
-    if not (existing_user.perfil == "Admin" and existing_user.is_system_admin):
+    if not ((existing_user.perfil == "Admin" or existing_user.perfil == "Administrador") and existing_user.is_system_admin):
         raise HTTPException(
             status_code=400,
             detail="Usuário não é um administrador do sistema"

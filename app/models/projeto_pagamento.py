@@ -16,6 +16,7 @@ class ProjetoPagamento(BaseModel, TimestampMixin):
     data_recebimento = Column(Date)
     observacao = Column(Text)
     ativo = Column(Boolean, default=True)
+    escritorio_id = Column(Integer, ForeignKey('escritorio.id'), nullable=False, index=True)
     
     # Relacionamentos
     # projeto = relationship("Projeto", back_populates="pagamentos")
