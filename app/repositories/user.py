@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import or_
+from sqlalchemy import or_, text
 from app.models.user import User, Escritorio
 from app.schemas.user import UserCreate, UserUpdate
 from app.core.security import get_password_hash
@@ -60,7 +60,9 @@ class UserRepository:
             telefone=user.telefone,
             data_nascimento=user.data_nascimento,
             perfil=user.perfil,
-            tipo=user.tipo
+            tipo=user.tipo,
+            tipo_pix=user.tipo_pix,
+            chave_pix=user.chave_pix
         )
         
         self.db.add(db_user)
@@ -75,6 +77,11 @@ class UserRepository:
             return None
         
         update_data = user.dict(exclude_unset=True)
+        
+        # Se senha foi fornecida, fazer hash antes de salvar
+        if 'senha' in update_data and update_data['senha']:
+            update_data['senha'] = get_password_hash(update_data['senha'])
+        
         for field, value in update_data.items():
             setattr(db_user, field, value)
         
@@ -82,13 +89,30 @@ class UserRepository:
         self.db.refresh(db_user)
         return db_user
     
-    def delete(self, user_id: int) -> bool:
-        """Remove usuário (soft delete)"""
+    def delete(self, user_id: int, permanent: bool = False) -> bool:
+        """
+        Remove usuário
+        
+        Args:
+            user_id: ID do usuário
+            permanent: Se True, remove permanentemente. Se False, soft delete (marca como inativo)
+        """
         db_user = self.get_by_id(user_id)
         if not db_user:
             return False
         
-        db_user.ativo = False
+        if permanent:
+            # Hard delete - remove do banco permanentemente
+            # Primeiro, remover relacionamentos com escritórios
+            self.db.execute(
+                text("DELETE FROM colaborador_escritorio WHERE colaborador_id = :user_id"),
+                {"user_id": user_id}
+            )
+            self.db.delete(db_user)
+        else:
+            # Soft delete - marca como inativo
+            db_user.ativo = False
+        
         self.db.commit()
         return True
     

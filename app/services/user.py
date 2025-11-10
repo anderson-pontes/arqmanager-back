@@ -50,9 +50,15 @@ class UserService:
             raise NotFoundException(f"Usuário {user_id} não encontrado")
         return UserResponse.from_orm(db_user)
     
-    def delete(self, user_id: int) -> bool:
-        """Remove usuário (soft delete)"""
-        success = self.repository.delete(user_id)
+    def delete(self, user_id: int, permanent: bool = False) -> bool:
+        """
+        Remove usuário
+        
+        Args:
+            user_id: ID do usuário
+            permanent: Se True, remove permanentemente. Se False, soft delete (marca como inativo)
+        """
+        success = self.repository.delete(user_id, permanent=permanent)
         if not success:
             raise NotFoundException(f"Usuário {user_id} não encontrado")
         return True

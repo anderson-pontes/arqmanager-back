@@ -70,6 +70,8 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     senha: str
+    tipo_pix: Optional[str] = None
+    chave_pix: Optional[str] = None
     
     @validator('senha')
     def validate_senha(cls, v):
@@ -86,6 +88,16 @@ class UserUpdate(BaseModel):
     perfil: Optional[PerfilEnum] = None
     tipo: Optional[TipoColaboradorEnum] = None
     foto: Optional[str] = None
+    ativo: Optional[bool] = None
+    tipo_pix: Optional[str] = None
+    chave_pix: Optional[str] = None
+    senha: Optional[str] = None
+    
+    @validator('senha')
+    def validate_senha(cls, v):
+        if v is not None and len(v) < 6:
+            raise ValueError('Senha deve ter no mínimo 6 caracteres')
+        return v
 
 
 class UserResponse(UserBase):
@@ -93,6 +105,8 @@ class UserResponse(UserBase):
     ativo: bool
     foto: Optional[str] = None
     ultimo_acesso: Optional[date] = None
+    tipo_pix: Optional[str] = None
+    chave_pix: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     escritorios: List[EscritorioResponse] = []
