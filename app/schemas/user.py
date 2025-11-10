@@ -19,11 +19,41 @@ class TipoColaboradorEnum(str, Enum):
 class EscritorioBase(BaseModel):
     nome_fantasia: str
     razao_social: str
-    documento: str
+    documento: Optional[str] = None  # CNPJ opcional
+    cpf: Optional[str] = None  # CPF opcional
     email: EmailStr
     telefone: Optional[str] = None
+    # Endereço completo (mantido para compatibilidade)
     endereco: Optional[str] = None
+    # Campos de endereço separados
+    logradouro: Optional[str] = None
+    numero: Optional[str] = None
+    complemento: Optional[str] = None
+    bairro: Optional[str] = None
+    cidade: Optional[str] = None
+    uf: Optional[str] = None
+    cep: Optional[str] = None
     cor: str = "#6366f1"
+    
+    @validator('cpf')
+    def validate_cpf(cls, v):
+        # Se CPF for fornecido, validar
+        if v is None or v == '' or (isinstance(v, str) and not v.strip()):
+            return None
+        # Remove caracteres não numéricos
+        cpf_clean = ''.join(filter(str.isdigit, str(v)))
+        if len(cpf_clean) != 11:
+            raise ValueError('CPF deve ter 11 dígitos')
+        return cpf_clean
+    
+    @validator('uf')
+    def validate_uf(cls, v):
+        # Se UF for fornecido, validar
+        if v is None or v == '':
+            return None
+        if isinstance(v, str) and len(v.strip()) != 2:
+            raise ValueError('UF deve ter 2 caracteres')
+        return v.strip().upper() if v else None
 
 
 class EscritorioCreate(EscritorioBase):
@@ -33,10 +63,41 @@ class EscritorioCreate(EscritorioBase):
 class EscritorioUpdate(BaseModel):
     nome_fantasia: Optional[str] = None
     razao_social: Optional[str] = None
+    documento: Optional[str] = None  # CNPJ opcional
+    cpf: Optional[str] = None  # CPF opcional
     email: Optional[EmailStr] = None
     telefone: Optional[str] = None
+    # Endereço completo (mantido para compatibilidade)
     endereco: Optional[str] = None
+    # Campos de endereço separados
+    logradouro: Optional[str] = None
+    numero: Optional[str] = None
+    complemento: Optional[str] = None
+    bairro: Optional[str] = None
+    cidade: Optional[str] = None
+    uf: Optional[str] = None
+    cep: Optional[str] = None
     cor: Optional[str] = None
+    
+    @validator('cpf')
+    def validate_cpf(cls, v):
+        # Se CPF for fornecido, validar
+        if v is None or v == '' or (isinstance(v, str) and not v.strip()):
+            return None
+        # Remove caracteres não numéricos
+        cpf_clean = ''.join(filter(str.isdigit, str(v)))
+        if len(cpf_clean) != 11:
+            raise ValueError('CPF deve ter 11 dígitos')
+        return cpf_clean
+    
+    @validator('uf')
+    def validate_uf(cls, v):
+        # Se UF for fornecido, validar
+        if v is None or v == '':
+            return None
+        if isinstance(v, str) and len(v.strip()) != 2:
+            raise ValueError('UF deve ter 2 caracteres')
+        return v.strip().upper() if v else None
 
 
 class EscritorioResponse(EscritorioBase):
@@ -87,6 +148,7 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     nome: Optional[str] = None
     email: Optional[EmailStr] = None
+    cpf: Optional[str] = None  # CPF opcional para atualização
     telefone: Optional[str] = None
     data_nascimento: Optional[date] = None
     perfil: Optional[PerfilEnum] = None
@@ -96,6 +158,17 @@ class UserUpdate(BaseModel):
     tipo_pix: Optional[str] = None
     chave_pix: Optional[str] = None
     senha: Optional[str] = None
+    
+    @validator('cpf')
+    def validate_cpf(cls, v):
+        # Se CPF for fornecido, validar
+        if v is None or v == '' or (isinstance(v, str) and not v.strip()):
+            return None
+        # Remove caracteres não numéricos
+        cpf_clean = ''.join(filter(str.isdigit, str(v)))
+        if len(cpf_clean) != 11:
+            raise ValueError('CPF deve ter 11 dígitos')
+        return cpf_clean
     
     @validator('senha')
     def validate_senha(cls, v):

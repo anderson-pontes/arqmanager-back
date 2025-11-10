@@ -215,13 +215,16 @@ def update_system_admin(
             )
     
     # Verificar se CPF já existe (se foi alterado e fornecido)
-    if user_data.cpf and user_data.cpf.strip() and user_data.cpf != existing_user.cpf:
-        cpf_user = user_repo.get_by_cpf(user_data.cpf)
-        if cpf_user:
-            raise HTTPException(
-                status_code=400,
-                detail="CPF já está cadastrado"
-            )
+    if user_data.cpf is not None:
+        # Se CPF foi fornecido e não está vazio
+        cpf_clean = user_data.cpf.strip() if isinstance(user_data.cpf, str) else None
+        if cpf_clean and cpf_clean != (existing_user.cpf or ''):
+            cpf_user = user_repo.get_by_cpf(cpf_clean)
+            if cpf_user and cpf_user.id != user_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="CPF já está cadastrado"
+                )
     
     # Garantir que continua sendo admin do sistema
     update_data = user_data.dict(exclude_unset=True)
@@ -359,13 +362,16 @@ def update_escritorio_admin(
             )
     
     # Verificar se CPF já existe (se foi alterado e fornecido)
-    if user_data.cpf and user_data.cpf.strip() and user_data.cpf != existing_user.cpf:
-        cpf_user = user_repo.get_by_cpf(user_data.cpf)
-        if cpf_user:
-            raise HTTPException(
-                status_code=400,
-                detail="CPF já está cadastrado"
-            )
+    if user_data.cpf is not None:
+        # Se CPF foi fornecido e não está vazio
+        cpf_clean = user_data.cpf.strip() if isinstance(user_data.cpf, str) else None
+        if cpf_clean and cpf_clean != (existing_user.cpf or ''):
+            cpf_user = user_repo.get_by_cpf(cpf_clean)
+            if cpf_user and cpf_user.id != user_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="CPF já está cadastrado"
+                )
     
     # Garantir que continua sendo admin (não do sistema)
     update_data = user_data.dict(exclude_unset=True)

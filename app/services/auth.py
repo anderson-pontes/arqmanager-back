@@ -44,17 +44,22 @@ class AuthService:
         
         if is_system_admin:
             # Admin do sistema: buscar TODOS os escritórios ativos
-            all_escritorios = self.escritorio_repo.get_all(limit=1000)
-            available_escritorios = [
-                EscritorioContextInfo(
-                    id=e.id,
-                    nome_fantasia=e.nome_fantasia,
-                    razao_social=e.razao_social,
-                    cor=e.cor or "#6366f1",
-                    perfil=None  # Admin escolhe o perfil
-                )
-                for e in all_escritorios if e.ativo
-            ]
+            try:
+                all_escritorios = self.escritorio_repo.get_all(limit=1000, ativo=True)
+                available_escritorios = [
+                    EscritorioContextInfo(
+                        id=e.id,
+                        nome_fantasia=e.nome_fantasia,
+                        razao_social=e.razao_social,
+                        cor=e.cor or "#6366f1",
+                        perfil=None  # Admin escolhe o perfil
+                    )
+                    for e in all_escritorios
+                ]
+            except Exception as e:
+                # Se houver erro (ex: campos não existem no banco), retornar lista vazia
+                print(f"Erro ao buscar escritórios: {e}")
+                available_escritorios = []
             requires_selection = True  # Admin sempre precisa selecionar
         else:
             # Usuário comum: apenas seus escritórios

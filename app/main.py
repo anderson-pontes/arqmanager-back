@@ -44,6 +44,17 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
+# Configure CORS - DEVE SER O PRIMEIRO MIDDLEWARE
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Aceita qualquer origem (desenvolvimento)
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
+)
+
 # Handler para erros de validação
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -56,23 +67,38 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         message = error.get("msg", "Erro de validação")
         error_messages.append(f"{field}: {message}")
     
-    return JSONResponse(
+    response = JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "detail": "; ".join(error_messages),
             "errors": errors
         }
     )
+    # Adicionar headers CORS manualmente
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
 
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # ⚠️ TEMPORÁRIO - aceita qualquer origem
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-)
+# Handler para erros gerais (500)
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """Handler para erros não tratados"""
+    import traceback
+    error_detail = str(exc) if settings.ENVIRONMENT == "development" else "Erro interno do servidor"
+    print(f"Erro não tratado: {exc}")
+    print(traceback.format_exc())
+    
+    response = JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": error_detail}
+    )
+    # Adicionar headers CORS manualmente - CRÍTICO para evitar erro CORS
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
 
 # Include API router
 app.include_router(api_router, prefix="/api/v1")

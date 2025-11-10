@@ -33,10 +33,18 @@ class EscritorioService:
         db_escritorio = Escritorio(
             nome_fantasia=escritorio_data.nome_fantasia,
             razao_social=escritorio_data.razao_social,
-            documento=escritorio_data.documento,
+            documento=escritorio_data.documento if escritorio_data.documento and escritorio_data.documento.strip() else None,
+            cpf=escritorio_data.cpf if escritorio_data.cpf and escritorio_data.cpf.strip() else None,
             email=escritorio_data.email,
             telefone=escritorio_data.telefone,
             endereco=escritorio_data.endereco,
+            logradouro=escritorio_data.logradouro,
+            numero=escritorio_data.numero,
+            complemento=escritorio_data.complemento,
+            bairro=escritorio_data.bairro,
+            cidade=escritorio_data.cidade,
+            uf=escritorio_data.uf,
+            cep=escritorio_data.cep,
             cor=escritorio_data.cor
         )
         self.db.add(db_escritorio)
