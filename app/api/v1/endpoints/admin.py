@@ -121,6 +121,88 @@ def create_escritorio_admin(
     return UserResponse.from_orm(new_user)
 
 
+@router.post("/escritorio-admin/{escritorio_id}/link/{user_id}", response_model=dict)
+def link_existing_admin_to_escritorio(
+    escritorio_id: int,
+    user_id: int,
+    current_user: dict = Depends(require_system_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Vincula um administrador de escritório existente a um novo escritório
+    Apenas administradores do sistema podem fazer essa vinculação
+    """
+    user_repo = UserRepository(db)
+    escritorio_repo = EscritorioRepository(db)
+    
+    # Verificar se escritório existe
+    escritorio = escritorio_repo.get_by_id(escritorio_id)
+    if not escritorio:
+        raise HTTPException(
+            status_code=404,
+            detail="Escritório não encontrado"
+        )
+    
+    if not escritorio.ativo:
+        raise HTTPException(
+            status_code=400,
+            detail="Escritório está inativo"
+        )
+    
+    # Verificar se usuário existe
+    user = user_repo.get_by_id(user_id)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="Usuário não encontrado"
+        )
+    
+    # Verificar se é admin de escritório (não do sistema)
+    if user.is_system_admin:
+        raise HTTPException(
+            status_code=400,
+            detail="Não é possível vincular administrador do sistema a escritórios"
+        )
+    
+    # Verificar se já está vinculado a este escritório
+    existing_link = db.execute(
+        text("""
+            SELECT COUNT(*) 
+            FROM colaborador_escritorio 
+            WHERE colaborador_id = :user_id 
+            AND escritorio_id = :escritorio_id
+        """),
+        {"user_id": user_id, "escritorio_id": escritorio_id}
+    ).scalar()
+    
+    if existing_link > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Administrador já está vinculado a este escritório"
+        )
+    
+    # Sempre usar perfil 'Admin' ao vincular admin de escritório
+    perfil = 'Admin'
+    
+    # Vincular ao escritório
+    db.execute(
+        text("""
+            INSERT INTO colaborador_escritorio (colaborador_id, escritorio_id, perfil, ativo)
+            VALUES (:user_id, :escritorio_id, :perfil, true)
+        """),
+        {"user_id": user_id, "escritorio_id": escritorio_id, "perfil": perfil}
+    )
+    
+    db.commit()
+    db.refresh(user)
+    
+    return {
+        "message": "Administrador vinculado ao escritório com sucesso",
+        "user": UserResponse.from_orm(user),
+        "escritorio_id": escritorio_id
+    }
+
+
 @router.get("/system-admins", response_model=List[UserResponse])
 def list_system_admins(
     skip: int = Query(0, ge=0),
@@ -139,6 +221,37 @@ def list_system_admins(
     ]
     
     return [UserResponse.from_orm(u) for u in system_admins]
+
+
+@router.get("/available-escritorio-admins", response_model=List[UserResponse])
+def get_available_escritorio_admins(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    current_user: dict = Depends(require_system_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Lista todos os administradores de escritório disponíveis
+    Retorna apenas usuários que já são administradores de algum escritório (perfil 'Admin')
+    Útil para vincular a novos escritórios
+    """
+    # Buscar apenas usuários que já são admins de escritório
+    # (têm perfil 'Admin' na tabela colaborador_escritorio)
+    admins = (
+        db.query(User)
+        .join(user_escritorio, User.id == user_escritorio.c.colaborador_id)
+        .filter(
+            user_escritorio.c.perfil == 'Admin',
+            User.is_system_admin == False,
+            User.ativo == True
+        )
+        .distinct()
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    
+    return [UserResponse.from_orm(u) for u in admins]
 
 
 @router.get("/escritorio-admins/{escritorio_id}", response_model=List[UserResponse])
