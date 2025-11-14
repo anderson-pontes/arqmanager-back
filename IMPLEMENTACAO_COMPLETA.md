@@ -134,3 +134,9 @@ A reestruturação do sistema para isolamento completo por escritório foi **con
 
 O sistema está pronto para uso com isolamento completo por escritório. Todos os dados principais estão isolados e o sistema de seeds garante que novos escritórios tenham dados iniciais.
 
+
+
+
+
+
+

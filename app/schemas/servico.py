@@ -28,8 +28,10 @@ class EtapaUpdate(BaseModel):
 class EtapaResponse(EtapaBase):
     id: int
     servico_id: int
+    escritorio_id: int
     created_at: datetime
     updated_at: datetime
+    tarefas: List["TarefaResponse"] = []
 
     class Config:
         from_attributes = True
@@ -61,9 +63,42 @@ class ServicoUpdate(BaseModel):
 
 class ServicoResponse(ServicoBase):
     id: int
+    escritorio_id: int
     created_at: datetime
     updated_at: datetime
     etapas: List[EtapaResponse] = []
+
+    class Config:
+        from_attributes = True
+
+
+# Schemas de Tarefa
+class TarefaBase(BaseModel):
+    nome: str = Field(..., max_length=500)
+    ordem: int = 0
+    cor: Optional[str] = Field(None, max_length=50)
+    tem_prazo: bool = True
+    precisa_detalhamento: bool = False
+
+
+class TarefaCreate(TarefaBase):
+    pass
+
+
+class TarefaUpdate(BaseModel):
+    nome: Optional[str] = Field(None, max_length=500)
+    ordem: Optional[int] = None
+    cor: Optional[str] = Field(None, max_length=50)
+    tem_prazo: Optional[bool] = None
+    precisa_detalhamento: Optional[bool] = None
+
+
+class TarefaResponse(TarefaBase):
+    id: int
+    etapa_id: int
+    escritorio_id: int
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True

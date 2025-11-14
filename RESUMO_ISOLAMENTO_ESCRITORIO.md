@@ -97,3 +97,9 @@
 
 - **Frontend**: O frontend precisa ser atualizado para garantir que todas as requisições funcionem corretamente com o novo sistema de isolamento.
 
+
+
+
+
+
+

@@ -2,7 +2,7 @@
 Repositório de Etapas
 """
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.models.etapa import Etapa
 from app.schemas.servico import EtapaCreate, EtapaUpdate
 
@@ -13,14 +13,14 @@ class EtapaRepository:
     
     def get_by_servico(self, servico_id: int, escritorio_id: int) -> List[Etapa]:
         """Lista etapas de um serviço, garantindo que pertencem ao escritório"""
-        return self.db.query(Etapa).filter(
+        return self.db.query(Etapa).options(joinedload(Etapa.tarefas)).filter(
             Etapa.servico_id == servico_id,
             Etapa.escritorio_id == escritorio_id
         ).order_by(Etapa.ordem).all()
     
     def get_by_id(self, etapa_id: int, escritorio_id: int) -> Optional[Etapa]:
         """Busca etapa por ID, garantindo que pertence ao escritório"""
-        return self.db.query(Etapa).filter(
+        return self.db.query(Etapa).options(joinedload(Etapa.tarefas)).filter(
             Etapa.id == etapa_id,
             Etapa.escritorio_id == escritorio_id
         ).first()

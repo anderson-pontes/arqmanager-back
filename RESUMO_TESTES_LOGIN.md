@@ -214,3 +214,9 @@ O fluxo completo de login está funcionando perfeitamente:
 
 O sistema multi-escritório com seleção dinâmica de contexto está **100% funcional** e **testado**!
 
+
+
+
+
+
+

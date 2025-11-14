@@ -70,9 +70,10 @@ O script migra na ordem correta (respeitando foreign keys):
 2. ✅ **Clientes** - Pessoas físicas e jurídicas
 3. ✅ **Serviços** - Tipos de serviços oferecidos
 4. ✅ **Etapas** - Etapas de cada serviço
-5. ✅ **Propostas** - Orçamentos e propostas
-6. ✅ **Projetos** - Projetos em andamento
-7. ✅ **Movimentos** - Movimentos financeiros (limitado a 1000)
+5. ✅ **Tarefas** - Tarefas/Microserviços de cada etapa
+6. ✅ **Propostas** - Orçamentos e propostas
+7. ✅ **Projetos** - Projetos em andamento
+8. ✅ **Movimentos** - Movimentos financeiros (limitado a 1000)
 
 ## ⚠️ Observações Importantes
 

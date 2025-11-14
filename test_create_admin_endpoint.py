@@ -77,3 +77,9 @@ else:
     except:
         print(f"Resposta: {response2.text}")
 
+
+
+
+
+
+

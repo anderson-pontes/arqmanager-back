@@ -27,3 +27,9 @@ class Auditoria(BaseModel):
     def __repr__(self):
         return f"<Auditoria(id={self.id}, usuario_id={self.usuario_id}, acao='{self.acao}', entidade='{self.entidade}')>"
 
+
+
+
+
+
+

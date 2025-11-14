@@ -1,0 +1,6 @@
+# Configuração MySQL para migração
+# Edite este arquivo com suas credenciais
+# Formato: mysql+pymysql://usuario:senha@host:porta/banco
+
+MYSQL_URL=mysql+pymysql://root:xpto1661WIN@localhost:3306/dbarqmanager
+

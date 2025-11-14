@@ -6,6 +6,7 @@ from app.models.user import User
 from app.models.cliente import Cliente
 from app.models.servico import Servico
 from app.models.etapa import Etapa
+from app.models.tarefa import Tarefa
 from app.models.status import Status
 from app.models.projeto import Projeto
 from app.models.projeto_colaborador import ProjetoColaborador
@@ -28,7 +29,7 @@ from app.models.movimento import Movimento
 # from app.models.projeto_arquivamento import ProjetoArquivamento
 
 __all__ = [
-    "Base", "User", "Cliente", "Servico", "Etapa", "Status", "Projeto", 
+    "Base", "User", "Cliente", "Servico", "Etapa", "Tarefa", "Status", "Projeto", 
     "ProjetoColaborador", "Proposta", "Movimento",
     # "Escritorio", "ColaboradorEscritorio", "ProjetoPagamento", "PropostaServicoEtapa",
     # "ContaBancaria", "ContaMovimentacao", "PlanoContas", "FormaPagamento",

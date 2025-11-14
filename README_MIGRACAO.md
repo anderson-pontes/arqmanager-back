@@ -6,15 +6,16 @@ Este guia ajuda você a migrar todos os dados do sistema legado MySQL para o nov
 
 ## 🎯 O que será migrado?
 
-| Tabela MySQL    | Tabela PostgreSQL | Registros      |
-| --------------- | ----------------- | -------------- |
-| `status`        | `status`          | Todos ativos   |
-| `cliente`       | `cliente`         | Todos ativos   |
-| `servico`       | `servicos`        | Todos ativos   |
-| `servico_etapa` | `etapas`          | Todos          |
-| `proposta`      | `propostas`       | Todos          |
-| `projeto`       | `projetos`        | Todos ativos   |
-| `movimento`     | `movimentos`      | Primeiros 1000 |
+| Tabela MySQL           | Tabela PostgreSQL | Registros      |
+| ---------------------- | ----------------- | -------------- |
+| `status`               | `status`          | Todos ativos   |
+| `cliente`              | `cliente`         | Todos ativos   |
+| `servico`              | `servicos`        | Todos ativos   |
+| `servico_etapa`        | `etapas`          | Todos          |
+| `servico_microservico` | `tarefas`         | Todos          |
+| `proposta`             | `propostas`       | Todos          |
+| `projeto`              | `projetos`        | Todos ativos   |
+| `movimento`            | `movimentos`      | Primeiros 1000 |
 
 ## 🚀 Início Rápido
 

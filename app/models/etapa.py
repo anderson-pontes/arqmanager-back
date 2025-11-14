@@ -19,6 +19,7 @@ class Etapa(Base, TimestampMixin):
     
     # Relacionamentos
     servico = relationship("Servico", back_populates="etapas")
+    tarefas = relationship("Tarefa", back_populates="etapa", cascade="all, delete-orphan", order_by="Tarefa.ordem")
     
     def __repr__(self):
         return f"<Etapa(id={self.id}, nome='{self.nome}', servico_id={self.servico_id})>"

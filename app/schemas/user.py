@@ -104,11 +104,19 @@ class EscritorioUpdate(BaseModel):
 class EscritorioResponse(EscritorioBase):
     id: int
     ativo: bool
+    cor: Optional[str] = "#6366f1"  # Tornar opcional com valor padrão
     created_at: datetime
     updated_at: datetime
     
     class Config:
         from_attributes = True
+    
+    @validator('cor', pre=True)
+    def validate_cor(cls, v):
+        """Garantir que cor sempre tenha um valor"""
+        if v is None or v == '':
+            return "#6366f1"
+        return v
 
 
 # User Schemas
@@ -131,6 +139,17 @@ class UserBase(BaseModel):
         # Se for string, tenta encontrar no enum
         if isinstance(v, str):
             v_clean = v.strip()
+            # Mapear valores antigos para novos
+            mapping = {
+                'Colaborador': PerfilEnum.PRODUCAO,
+                'colaborador': PerfilEnum.PRODUCAO,
+                'Admin': PerfilEnum.ADMIN,
+                'admin': PerfilEnum.ADMIN,
+                'Administrador': PerfilEnum.ADMINISTRADOR,
+                'administrador': PerfilEnum.ADMINISTRADOR,
+            }
+            if v_clean in mapping:
+                return mapping[v_clean]
             # Tenta encontrar pelo valor exato
             for enum_item in PerfilEnum:
                 if enum_item.value == v_clean:
@@ -210,10 +229,22 @@ class UserResponse(UserBase):
     is_system_admin: bool = False  # NOVO
     created_at: datetime
     updated_at: datetime
-    escritorios: List[EscritorioResponse] = []
+    escritorios: Optional[List[EscritorioResponse]] = []  # Opcional para evitar problemas
     
     class Config:
         from_attributes = True
+    
+    @validator('escritorios', pre=True)
+    def validate_escritorios(cls, v):
+        """Garantir que escritorios seja sempre uma lista"""
+        if v is None:
+            return []
+        # Garantir que todos os escritórios tenham cor válida
+        if isinstance(v, list):
+            for esc in v:
+                if hasattr(esc, 'cor') and (esc.cor is None or esc.cor == ''):
+                    esc.cor = "#6366f1"
+        return v
 
 
 class UserLogin(BaseModel):

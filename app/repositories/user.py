@@ -34,10 +34,13 @@ class UserRepository:
                 user_escritorio, User.id == user_escritorio.c.colaborador_id
             ).filter(
                 user_escritorio.c.escritorio_id == escritorio_id
-            ).distinct().options(joinedload(User.escritorios))
+            ).distinct()
+            # Carregar escritórios apenas se necessário (pode causar problemas de serialização)
+            # query = query.options(joinedload(User.escritorios))
         else:
             # Listar todos os usuários (para admin do sistema)
-            query = self.db.query(User).options(joinedload(User.escritorios))
+            query = self.db.query(User)
+            # query = query.options(joinedload(User.escritorios))
         
         if ativo is not None:
             query = query.filter(User.ativo == ativo)
@@ -55,11 +58,11 @@ class UserRepository:
     
     def get_by_id(self, user_id: int) -> Optional[User]:
         """Busca usuário por ID"""
-        return self.db.query(User).options(joinedload(User.escritorios)).filter(User.id == user_id).first()
+        return self.db.query(User).filter(User.id == user_id).first()
     
     def get_by_email(self, email: str) -> Optional[User]:
         """Busca usuário por email"""
-        return self.db.query(User).options(joinedload(User.escritorios)).filter(User.email == email).first()
+        return self.db.query(User).filter(User.email == email).first()
     
     def get_by_cpf(self, cpf: str) -> Optional[User]:
         """Busca usuário por CPF"""
