@@ -41,3 +41,6 @@ def fix_perfis_colaboradores():
 if __name__ == "__main__":
     fix_perfis_colaboradores()
 
+
+
+

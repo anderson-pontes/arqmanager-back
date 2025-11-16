@@ -46,3 +46,6 @@ if __name__ == "__main__":
         print("2. Arquivo .mysql_config na raiz do projeto")
         print("3. Editar diretamente migrate_data.py linha 13")
 
+
+
+

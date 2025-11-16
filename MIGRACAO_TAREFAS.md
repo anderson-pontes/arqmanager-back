@@ -111,3 +111,6 @@ WHERE e.id IS NULL;
 - Execute o script de correção de sequences
 - Verifique se as etapas têm `escritorio_id` preenchido
 
+
+
+

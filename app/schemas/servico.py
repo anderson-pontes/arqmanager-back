@@ -10,6 +10,7 @@ from decimal import Decimal
 class EtapaBase(BaseModel):
     nome: str = Field(..., max_length=500)
     descricao: Optional[str] = None
+    descricao_contrato: Optional[str] = None  # HTML/rich text para contrato
     ordem: int = 0
     obrigatoria: bool = True
 
@@ -21,6 +22,7 @@ class EtapaCreate(EtapaBase):
 class EtapaUpdate(BaseModel):
     nome: Optional[str] = Field(None, max_length=500)
     descricao: Optional[str] = None
+    descricao_contrato: Optional[str] = None  # HTML/rich text para contrato
     ordem: Optional[int] = None
     obrigatoria: Optional[bool] = None
 

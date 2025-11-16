@@ -12,7 +12,8 @@ class Etapa(Base, TimestampMixin):
     id = Column(Integer, primary_key=True, index=True)
     servico_id = Column(Integer, ForeignKey("servicos.id"), nullable=False)
     nome = Column(String(500), nullable=False)  # descricao no MySQL
-    descricao = Column(Text)  # descricao_contrato no MySQL
+    descricao = Column(Text)  # Descrição geral da etapa
+    descricao_contrato = Column(Text)  # Descrição para contrato (HTML/rich text)
     ordem = Column(Integer, default=0)
     obrigatoria = Column(Boolean, default=True)  # exibir no MySQL (invertido)
     escritorio_id = Column(Integer, ForeignKey("escritorio.id"), nullable=False, index=True)

@@ -56,3 +56,6 @@ def check_colaboradores_migrados():
 if __name__ == "__main__":
     check_colaboradores_migrados()
 
+
+
+

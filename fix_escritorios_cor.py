@@ -22,3 +22,6 @@ def fix_escritorios_cor():
 if __name__ == "__main__":
     fix_escritorios_cor()
 
+
+
+

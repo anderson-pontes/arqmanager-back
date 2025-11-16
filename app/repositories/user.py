@@ -57,15 +57,15 @@ class UserRepository:
         return query.offset(skip).limit(limit).all()
     
     def get_by_id(self, user_id: int) -> Optional[User]:
-        """Busca usuário por ID"""
-        return self.db.query(User).filter(User.id == user_id).first()
+        """Busca usuário por ID com relacionamentos carregados"""
+        return self.db.query(User).options(joinedload(User.escritorios)).filter(User.id == user_id).first()
     
     def get_by_email(self, email: str) -> Optional[User]:
-        """Busca usuário por email"""
-        return self.db.query(User).filter(User.email == email).first()
+        """Busca usuário por email (único no sistema)"""
+        return self.db.query(User).filter(User.email == email).options(joinedload(User.escritorios)).first()
     
     def get_by_cpf(self, cpf: str) -> Optional[User]:
-        """Busca usuário por CPF"""
+        """Busca usuário por CPF (único no sistema)"""
         return self.db.query(User).filter(User.cpf == cpf).first()
     
     def create(self, user: UserCreate) -> User:

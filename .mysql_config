@@ -4,3 +4,6 @@
 
 MYSQL_URL=mysql+pymysql://root:xpto1661WIN@localhost:3306/dbarqmanager
 
+
+
+

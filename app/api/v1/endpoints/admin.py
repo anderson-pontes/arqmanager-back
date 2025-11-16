@@ -82,7 +82,7 @@ def create_escritorio_admin(
             detail="Escritório está inativo"
         )
     
-    # Verificar se email já existe
+    # Verificar se email já existe (único no sistema)
     existing_user = user_repo.get_by_email(user_data.email)
     if existing_user:
         raise HTTPException(
@@ -90,7 +90,7 @@ def create_escritorio_admin(
             detail="Email já está cadastrado"
         )
     
-    # Verificar se CPF já existe (apenas se fornecido)
+    # Verificar se CPF já existe (único no sistema, apenas se fornecido)
     if user_data.cpf and user_data.cpf.strip():
         existing_cpf = user_repo.get_by_cpf(user_data.cpf)
         if existing_cpf:
@@ -274,24 +274,42 @@ def list_escritorio_admins(
             detail="Escritório não encontrado"
         )
     
-    # Buscar admins do escritório usando relacionamento
-    admins = (
+    # Buscar admins do escritório - incluir tanto 'Admin' quanto 'Administrador' da nova tabela
+    from app.models.user import ColaboradorEscritorioPerfil
+    
+    # Buscar usuários com perfil 'Admin' na tabela antiga (compatibilidade)
+    admins_old = (
         db.query(User)
         .join(user_escritorio, User.id == user_escritorio.c.colaborador_id)
         .filter(
             user_escritorio.c.escritorio_id == escritorio_id,
             user_escritorio.c.perfil == 'Admin',
-            User.perfil == 'Admin',
             User.is_system_admin == False,
             User.ativo == True,
             user_escritorio.c.ativo == True
         )
-        .offset(skip)
-        .limit(limit)
         .all()
     )
     
-    return [UserResponse.from_orm(u) for u in admins]
+    # Buscar usuários com perfil 'Administrador' na nova tabela
+    admins_new = (
+        db.query(User)
+        .join(ColaboradorEscritorioPerfil, User.id == ColaboradorEscritorioPerfil.colaborador_id)
+        .filter(
+            ColaboradorEscritorioPerfil.escritorio_id == escritorio_id,
+            ColaboradorEscritorioPerfil.perfil == 'Administrador',
+            User.is_system_admin == False,
+            User.ativo == True,
+            ColaboradorEscritorioPerfil.ativo == True
+        )
+        .all()
+    )
+    
+    # Combinar e remover duplicatas
+    all_admins = {u.id: u for u in admins_old + admins_new}
+    admins_list = list(all_admins.values())[skip:skip+limit]
+    
+    return [UserResponse.model_validate(u) for u in admins_list]
 
 
 @router.put("/system-admin/{user_id}", response_model=UserResponse)

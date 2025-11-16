@@ -81,13 +81,16 @@ class UserService:
         return UserResponse.from_orm(user)
     
     def create(self, user: UserCreate) -> UserResponse:
-        """Cria novo usuário"""
-        # Verificar se email já existe
+        """
+        Cria novo usuário
+        Valida email e CPF como únicos no sistema
+        """
+        # Verificar se email já existe (único no sistema)
         existing_email = self.repository.get_by_email(user.email)
         if existing_email:
             raise ConflictException("Email já cadastrado")
         
-        # Verificar se CPF já existe (apenas se fornecido)
+        # Verificar se CPF já existe (único no sistema, apenas se fornecido)
         if user.cpf and user.cpf.strip():
             existing_cpf = self.repository.get_by_cpf(user.cpf)
             if existing_cpf:
@@ -97,7 +100,22 @@ class UserService:
         return UserResponse.from_orm(db_user)
     
     def update(self, user_id: int, user: UserUpdate) -> UserResponse:
-        """Atualiza usuário"""
+        """
+        Atualiza usuário
+        Valida email e CPF como únicos no sistema
+        """
+        # Verificar se email já existe (se estiver sendo alterado)
+        if user.email:
+            existing_email = self.repository.get_by_email(user.email)
+            if existing_email and existing_email.id != user_id:
+                raise ConflictException("Email já cadastrado")
+        
+        # Verificar se CPF já existe (se estiver sendo alterado)
+        if user.cpf and user.cpf.strip():
+            existing_cpf = self.repository.get_by_cpf(user.cpf)
+            if existing_cpf and existing_cpf.id != user_id:
+                raise ConflictException("CPF já cadastrado")
+        
         db_user = self.repository.update(user_id, user)
         if not db_user:
             raise NotFoundException(f"Usuário {user_id} não encontrado")

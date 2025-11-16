@@ -25,7 +25,7 @@ class AuthService:
         user = self.user_repo.get_by_email(credentials.email)
         
         if not user:
-            raise UnauthorizedException("Email ou senha incorretos")
+            raise UnauthorizedException("Email não encontrado")
         
         # Verificar se usuário está ativo
         if not user.ativo:
@@ -33,7 +33,7 @@ class AuthService:
         
         # Verificar senha
         if not verify_password(credentials.senha, user.senha):
-            raise UnauthorizedException("Email ou senha incorretos")
+            raise UnauthorizedException("Senha incorreta")
         
         # Verificar se é admin do sistema
         is_system_admin = (user.perfil == "Admin" or user.perfil == "Administrador") and (user.is_system_admin or False)
@@ -52,7 +52,7 @@ class AuthService:
                         nome_fantasia=e.nome_fantasia,
                         razao_social=e.razao_social,
                         cor=e.cor or "#6366f1",
-                        perfil=None  # Admin escolhe o perfil
+                        perfis=[]  # Admin escolhe o perfil
                     )
                     for e in all_escritorios
                 ]
@@ -63,20 +63,29 @@ class AuthService:
             requires_selection = True  # Admin sempre precisa selecionar
         else:
             # Usuário comum: apenas seus escritórios
-            for escritorio in user.escritorios:
+            # Garantir que o relacionamento está carregado
+            if not hasattr(user, 'escritorios') or user.escritorios is None:
+                # Se não estiver carregado, recarregar o usuário com relacionamento
+                self.db.refresh(user, ['escritorios'])
+            
+            for escritorio in user.escritorios or []:
                 if not escritorio.ativo:
                     continue
                     
-                perfil = self._get_user_perfil_in_escritorio(user.id, escritorio.id)
+                perfis = self._get_user_perfis_in_escritorio(user.id, escritorio.id)
                 available_escritorios.append(
                     EscritorioContextInfo(
                         id=escritorio.id,
                         nome_fantasia=escritorio.nome_fantasia,
                         razao_social=escritorio.razao_social,
                         cor=escritorio.cor or "#6366f1",
-                        perfil=perfil
+                        perfis=perfis
                     )
                 )
+            
+            # Se usuário não tem escritórios vinculados, não pode fazer login
+            if len(available_escritorios) == 0:
+                raise UnauthorizedException("Usuário não está vinculado a nenhum escritório ativo")
             
             requires_selection = len(available_escritorios) > 1
         
@@ -166,7 +175,7 @@ class AuthService:
     
     def get_available_escritorios(self, user_id: int) -> List[EscritorioContextInfo]:
         """
-        Retorna lista de escritórios disponíveis para o usuário
+        Retorna lista de escritórios disponíveis para o usuário com múltiplos perfis
         """
         user = self.user_repo.get_by_id(user_id)
         if not user:
@@ -183,38 +192,70 @@ class AuthService:
                     nome_fantasia=e.nome_fantasia,
                     razao_social=e.razao_social,
                     cor=e.cor or "#6366f1",
-                    perfil=None
+                    perfis=[]  # Admin pode escolher qualquer perfil
                 )
                 for e in escritorios if e.ativo
             ]
         else:
-            # Usuário comum: apenas seus escritórios
+            # Usuário comum: apenas seus escritórios com múltiplos perfis
             result = []
-            for escritorio in user.escritorios:
+            # Garantir que o relacionamento está carregado
+            if not hasattr(user, 'escritorios') or user.escritorios is None:
+                self.db.refresh(user, ['escritorios'])
+            
+            for escritorio in user.escritorios or []:
                 if not escritorio.ativo:
                     continue
-                perfil = self._get_user_perfil_in_escritorio(user.id, escritorio.id)
+                perfis = self._get_user_perfis_in_escritorio(user.id, escritorio.id)
                 result.append(
                     EscritorioContextInfo(
                         id=escritorio.id,
                         nome_fantasia=escritorio.nome_fantasia,
                         razao_social=escritorio.razao_social,
                         cor=escritorio.cor or "#6366f1",
-                        perfil=perfil
+                        perfis=perfis
                     )
                 )
             return result
     
-    def _get_user_perfil_in_escritorio(self, user_id: int, escritorio_id: int) -> Optional[str]:
-        """Busca o perfil do usuário em um escritório específico"""
+    def _get_user_perfis_in_escritorio(self, user_id: int, escritorio_id: int) -> List[str]:
+        """Busca os perfis do usuário em um escritório específico (múltiplos perfis)"""
+        # Primeiro, buscar na nova tabela de múltiplos perfis
         result = self.db.execute(
             text("""
-                SELECT perfil FROM colaborador_escritorio 
+                SELECT perfil FROM colaborador_escritorio_perfil 
                 WHERE colaborador_id = :user_id AND escritorio_id = :escritorio_id AND ativo = true
+                ORDER BY perfil
             """),
             {"user_id": user_id, "escritorio_id": escritorio_id}
-        ).first()
-        return result[0] if result else None
+        ).fetchall()
+        
+        perfis = [row[0] for row in result] if result else []
+        
+        # Se não encontrou perfis na nova tabela, buscar na tabela antiga (compatibilidade)
+        if not perfis:
+            result_old = self.db.execute(
+                text("""
+                    SELECT perfil FROM colaborador_escritorio 
+                    WHERE colaborador_id = :user_id AND escritorio_id = :escritorio_id AND ativo = true
+                    AND perfil IS NOT NULL
+                """),
+                {"user_id": user_id, "escritorio_id": escritorio_id}
+            ).first()
+            
+            if result_old and result_old[0]:
+                perfis = [result_old[0]]
+        
+        # Se ainda não encontrou, retornar perfil padrão
+        if not perfis:
+            perfis = ['Produção']
+        
+        return perfis
+    
+    def _get_user_perfil_in_escritorio(self, user_id: int, escritorio_id: int) -> Optional[str]:
+        """Busca o primeiro perfil do usuário em um escritório específico (compatibilidade)"""
+        perfis = self._get_user_perfis_in_escritorio(user_id, escritorio_id)
+        return perfis[0] if perfis else None
     
     def refresh_token(self, refresh_token: str) -> dict:
         """

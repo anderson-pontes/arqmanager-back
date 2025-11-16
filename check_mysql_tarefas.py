@@ -46,3 +46,6 @@ def check_mysql_tarefas():
 if __name__ == "__main__":
     check_mysql_tarefas()
 
+
+
+

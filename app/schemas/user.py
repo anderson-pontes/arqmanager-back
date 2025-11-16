@@ -8,7 +8,9 @@ class PerfilEnum(str, Enum):
     ADMIN = "Admin"  # Para admins do sistema e escritório (compatibilidade)
     ADMINISTRADOR = "Administrador"  # Para colaboradores do escritório
     COORDENADOR_PROJETOS = "Coordenador de Projetos"
+    FINANCEIRO = "Financeiro"
     PRODUCAO = "Produção"
+    TERCEIRIZADO = "Terceirizado"
 
 
 class TipoColaboradorEnum(str, Enum):
@@ -147,6 +149,10 @@ class UserBase(BaseModel):
                 'admin': PerfilEnum.ADMIN,
                 'Administrador': PerfilEnum.ADMINISTRADOR,
                 'administrador': PerfilEnum.ADMINISTRADOR,
+                'Financeiro': PerfilEnum.FINANCEIRO,
+                'financeiro': PerfilEnum.FINANCEIRO,
+                'Terceirizado': PerfilEnum.TERCEIRIZADO,
+                'terceirizado': PerfilEnum.TERCEIRIZADO,
             }
             if v_clean in mapping:
                 return mapping[v_clean]
@@ -174,16 +180,61 @@ class UserBase(BaseModel):
         return cpf_clean
 
 
+class ColaboradorEscritorioPerfilCreate(BaseModel):
+    """Schema para criar perfil de colaborador em escritório"""
+    escritorio_id: int
+    perfis: List[str]  # Lista de perfis (múltiplos)
+    
+    @validator('perfis')
+    def validate_perfis(cls, v):
+        if not v or len(v) == 0:
+            raise ValueError('Deve ter pelo menos um perfil')
+        # Validar se os perfis são válidos
+        valid_perfis = [p.value for p in PerfilEnum]
+        for perfil in v:
+            if perfil not in valid_perfis:
+                raise ValueError(f'Perfil inválido: {perfil}. Perfis válidos: {", ".join(valid_perfis)}')
+        return v
+
+
+class ColaboradorEscritorioPerfilResponse(BaseModel):
+    """Schema de resposta para perfil de colaborador em escritório"""
+    id: int
+    colaborador_id: int
+    escritorio_id: int
+    perfil: str
+    ativo: bool
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+
 class UserCreate(UserBase):
     senha: str
     tipo_pix: Optional[str] = None
     chave_pix: Optional[str] = None
     is_system_admin: Optional[bool] = False  # NOVO
+    escritorio_id: Optional[int] = None  # Escritório para vincular
+    perfis: Optional[List[str]] = None  # Lista de perfis (múltiplos) para o escritório
     
     @validator('senha')
     def validate_senha(cls, v):
         if len(v) < 6:
             raise ValueError('Senha deve ter no mínimo 6 caracteres')
+        return v
+    
+    @validator('perfis')
+    def validate_perfis(cls, v):
+        if v is not None:
+            if len(v) == 0:
+                raise ValueError('Se fornecido, deve ter pelo menos um perfil')
+            # Validar se os perfis são válidos
+            valid_perfis = [p.value for p in PerfilEnum]
+            for perfil in v:
+                if perfil not in valid_perfis:
+                    raise ValueError(f'Perfil inválido: {perfil}. Perfis válidos: {", ".join(valid_perfis)}')
         return v
 
 
@@ -230,6 +281,7 @@ class UserResponse(UserBase):
     created_at: datetime
     updated_at: datetime
     escritorios: Optional[List[EscritorioResponse]] = []  # Opcional para evitar problemas
+    perfis: Optional[List[ColaboradorEscritorioPerfilResponse]] = []  # Lista de perfis do colaborador no escritório
     
     class Config:
         from_attributes = True
@@ -264,12 +316,12 @@ class TokenData(BaseModel):
 
 
 class EscritorioContextInfo(BaseModel):
-    """Informações de escritório disponível"""
+    """Informações de escritório disponível com múltiplos perfis"""
     id: int
     nome_fantasia: str
     razao_social: str
     cor: str
-    perfil: Optional[str] = None  # Perfil do usuário neste escritório (se aplicável)
+    perfis: List[str] = []  # Lista de perfis do usuário neste escritório
 
 
 class SetContextRequest(BaseModel):

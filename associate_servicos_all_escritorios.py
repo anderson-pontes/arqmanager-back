@@ -154,3 +154,6 @@ def associate_servicos_to_all_escritorios():
 if __name__ == "__main__":
     associate_servicos_to_all_escritorios()
 
+
+
+

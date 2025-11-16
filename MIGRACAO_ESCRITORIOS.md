@@ -100,3 +100,6 @@ SELECT MIN(id), MAX(id), COUNT(*) FROM escritorio;
 3. **Campos não migrados**: Alguns campos do MySQL não existem no novo schema e são ignorados
 4. **Sequence**: Após a migração, execute `fix_all_sequences.py` para corrigir a sequence
 
+
+
+
