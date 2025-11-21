@@ -16,7 +16,7 @@ class EtapaRepository:
         return self.db.query(Etapa).options(joinedload(Etapa.tarefas)).filter(
             Etapa.servico_id == servico_id,
             Etapa.escritorio_id == escritorio_id
-        ).order_by(Etapa.ordem).all()
+        ).order_by(Etapa.ordem, Etapa.id).all()
     
     def get_by_id(self, etapa_id: int, escritorio_id: int) -> Optional[Etapa]:
         """Busca etapa por ID, garantindo que pertence ao escritório"""

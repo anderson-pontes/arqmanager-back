@@ -16,7 +16,7 @@ class TarefaRepository:
         return self.db.query(Tarefa).filter(
             Tarefa.etapa_id == etapa_id,
             Tarefa.escritorio_id == escritorio_id
-        ).order_by(Tarefa.ordem).all()
+        ).order_by(Tarefa.ordem, Tarefa.id).all()
     
     def get_by_id(self, tarefa_id: int, escritorio_id: int) -> Optional[Tarefa]:
         """Busca tarefa por ID, garantindo que pertence ao escritório"""
@@ -32,7 +32,7 @@ class TarefaRepository:
         if etapa_id:
             query = query.filter(Tarefa.etapa_id == etapa_id)
         
-        return query.order_by(Tarefa.ordem).offset(skip).limit(limit).all()
+        return query.order_by(Tarefa.ordem, Tarefa.id).offset(skip).limit(limit).all()
     
     def create(self, etapa_id: int, tarefa_data: TarefaCreate, escritorio_id: int) -> Tarefa:
         """Cria nova tarefa, vinculada à etapa e ao escritório"""
@@ -85,6 +85,6 @@ class TarefaRepository:
         if etapa_id:
             query = query.filter(Tarefa.etapa_id == etapa_id)
         
-        return query.order_by(Tarefa.ordem).offset(skip).limit(limit).all()
+        return query.order_by(Tarefa.ordem, Tarefa.id).offset(skip).limit(limit).all()
 
 

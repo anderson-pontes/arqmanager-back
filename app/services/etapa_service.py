@@ -60,6 +60,27 @@ class EtapaService:
                 detail="Serviço não encontrado"
             )
         
+        # Validar nome obrigatório
+        if not etapa_data.nome or not etapa_data.nome.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Nome da etapa é obrigatório"
+            )
+        
+        # Validar tamanho do nome
+        if len(etapa_data.nome) > 500:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Nome da etapa não pode ter mais de 500 caracteres"
+            )
+        
+        # Validar ordem numérica
+        if etapa_data.ordem is not None and etapa_data.ordem < 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ordem deve ser um número positivo ou zero"
+            )
+        
         return self.etapa_repo.create(servico_id, etapa_data, escritorio_id)
     
     def atualizar_etapa(
@@ -102,5 +123,55 @@ class EtapaService:
             )
         
         return self.etapa_repo.delete(etapa_id, escritorio_id)
+    
+    def reordenar_etapas(
+        self,
+        servico_id: int,
+        etapa_ids: List[int],
+        escritorio_id: int
+    ) -> List[Etapa]:
+        """
+        Reordena etapas de um serviço em lote
+        Recebe uma lista de IDs na nova ordem e atualiza o campo ordem de cada etapa
+        """
+        # Validar se serviço existe e pertence ao escritório
+        servico = self.servico_repo.get_by_id(servico_id, escritorio_id)
+        if not servico:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Serviço não encontrado"
+            )
+        
+        # Validar se todas as etapas pertencem ao serviço e escritório
+        etapas = self.etapa_repo.get_by_servico(servico_id, escritorio_id)
+        etapa_ids_existentes = {etapa.id for etapa in etapas}
+        
+        if len(etapa_ids) != len(etapa_ids_existentes):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Número de etapas não corresponde ao esperado"
+            )
+        
+        for etapa_id in etapa_ids:
+            if etapa_id not in etapa_ids_existentes:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Etapa {etapa_id} não pertence ao serviço {servico_id}"
+                )
+        
+        # Atualizar ordem de cada etapa
+        etapas_atualizadas = []
+        for ordem, etapa_id in enumerate(etapa_ids):
+            etapa = self.etapa_repo.get_by_id(etapa_id, escritorio_id)
+            if etapa:
+                etapa_atualizada = self.etapa_repo.update(
+                    etapa_id,
+                    EtapaUpdate(ordem=ordem),
+                    escritorio_id
+                )
+                if etapa_atualizada:
+                    etapas_atualizadas.append(etapa_atualizada)
+        
+        return etapas_atualizadas
 
 

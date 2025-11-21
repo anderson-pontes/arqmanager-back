@@ -46,6 +46,20 @@ class ServicoService:
         escritorio_id: int
     ) -> Servico:
         """Cria um novo serviço com validações"""
+        # Validar nome obrigatório
+        if not servico_data.nome or not servico_data.nome.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Nome do serviço é obrigatório"
+            )
+        
+        # Validar tamanho do nome
+        if len(servico_data.nome) > 500:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Nome do serviço não pode ter mais de 500 caracteres"
+            )
+        
         # Validar código do plano de contas único por escritório
         if servico_data.codigo_plano_contas:
             servicos_existentes = self.servico_repo.get_all(escritorio_id, 0, 1000)
@@ -136,10 +150,10 @@ class ServicoService:
         if ativo is not None:
             query = query.filter(Servico.ativo == ativo)
         
-        # Ordenar por ordem em cada nível
-        servicos = query.all()
+        # Ordenar serviços por ID
+        servicos = query.order_by(Servico.id).all()
         
-        # Ordenar etapas e tarefas manualmente (garantir ordem correta)
+        # Ordenar etapas e tarefas manualmente (garantir ordem correta: ordem, id)
         for servico in servicos:
             if servico.etapas:
                 servico.etapas = sorted(servico.etapas, key=lambda e: (e.ordem, e.id))

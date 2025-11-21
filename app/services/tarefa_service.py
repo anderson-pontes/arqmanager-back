@@ -59,6 +59,27 @@ class TarefaService:
                 detail="Etapa inválida"
             )
         
+        # Validar nome obrigatório
+        if not tarefa_data.nome or not tarefa_data.nome.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Nome da tarefa é obrigatório"
+            )
+        
+        # Validar tamanho do nome
+        if len(tarefa_data.nome) > 500:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Nome da tarefa não pode ter mais de 500 caracteres"
+            )
+        
+        # Validar ordem numérica
+        if tarefa_data.ordem is not None and tarefa_data.ordem < 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ordem deve ser um número positivo ou zero"
+            )
+        
         # Validar cor se fornecida (formato hex)
         if tarefa_data.cor:
             cor = tarefa_data.cor.strip()
@@ -175,5 +196,55 @@ class TarefaService:
             )
         
         return self.tarefa_repo.search(escritorio_id, search_term, etapa_id, skip, limit)
+    
+    def reordenar_tarefas(
+        self,
+        etapa_id: int,
+        tarefa_ids: List[int],
+        escritorio_id: int
+    ) -> List[Tarefa]:
+        """
+        Reordena tarefas de uma etapa em lote
+        Recebe uma lista de IDs na nova ordem e atualiza o campo ordem de cada tarefa
+        """
+        # Validar se etapa existe e pertence ao escritório
+        etapa = self.etapa_repo.get_by_id(etapa_id, escritorio_id)
+        if not etapa:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Etapa não encontrada"
+            )
+        
+        # Validar se todas as tarefas pertencem à etapa e escritório
+        tarefas = self.tarefa_repo.get_by_etapa(etapa_id, escritorio_id)
+        tarefa_ids_existentes = {tarefa.id for tarefa in tarefas}
+        
+        if len(tarefa_ids) != len(tarefa_ids_existentes):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Número de tarefas não corresponde ao esperado"
+            )
+        
+        for tarefa_id in tarefa_ids:
+            if tarefa_id not in tarefa_ids_existentes:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Tarefa {tarefa_id} não pertence à etapa {etapa_id}"
+                )
+        
+        # Atualizar ordem de cada tarefa
+        tarefas_atualizadas = []
+        for ordem, tarefa_id in enumerate(tarefa_ids):
+            tarefa = self.tarefa_repo.get_by_id(tarefa_id, escritorio_id)
+            if tarefa:
+                tarefa_atualizada = self.tarefa_repo.update(
+                    tarefa_id,
+                    TarefaUpdate(ordem=ordem),
+                    escritorio_id
+                )
+                if tarefa_atualizada:
+                    tarefas_atualizadas.append(tarefa_atualizada)
+        
+        return tarefas_atualizadas
 
 

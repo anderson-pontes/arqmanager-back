@@ -104,3 +104,13 @@ class TarefaResponse(TarefaBase):
 
     class Config:
         from_attributes = True
+
+
+class ReordenarEtapasRequest(BaseModel):
+    """Request para reordenar etapas em lote"""
+    etapa_ids: List[int] = Field(..., description="Lista de IDs das etapas na nova ordem")
+
+
+class ReordenarTarefasRequest(BaseModel):
+    """Request para reordenar tarefas em lote"""
+    tarefa_ids: List[int] = Field(..., description="Lista de IDs das tarefas na nova ordem")

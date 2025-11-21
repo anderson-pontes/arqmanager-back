@@ -13,7 +13,8 @@ from app.services.tarefa_service import TarefaService
 from app.schemas.servico import (
     ServicoCreate, ServicoUpdate, ServicoResponse,
     EtapaCreate, EtapaUpdate, EtapaResponse,
-    TarefaCreate, TarefaUpdate, TarefaResponse
+    TarefaCreate, TarefaUpdate, TarefaResponse,
+    ReordenarEtapasRequest, ReordenarTarefasRequest
 )
 
 router = APIRouter()
@@ -176,6 +177,19 @@ def deletar_etapa(
     service.deletar_etapa(etapa_id, escritorio_id)
 
 
+@router.put("/{servico_id}/etapas/reordenar", response_model=List[EtapaResponse])
+def reordenar_etapas(
+    servico_id: int,
+    request: ReordenarEtapasRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+    escritorio_id: int = Depends(get_current_escritorio)
+):
+    """Reordena etapas de um serviço em lote"""
+    service = EtapaService(db)
+    return service.reordenar_etapas(servico_id, request.etapa_ids, escritorio_id)
+
+
 # Endpoints de Tarefas
 @router.get("/{servico_id}/etapas/{etapa_id}/tarefas", response_model=List[TarefaResponse])
 def listar_tarefas_por_etapa(
@@ -289,3 +303,27 @@ def deletar_tarefa_por_etapa(
         )
     
     tarefa_service.deletar_tarefa(tarefa_id, escritorio_id)
+
+
+@router.put("/{servico_id}/etapas/{etapa_id}/tarefas/reordenar", response_model=List[TarefaResponse])
+def reordenar_tarefas(
+    servico_id: int,
+    etapa_id: int,
+    request: ReordenarTarefasRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+    escritorio_id: int = Depends(get_current_escritorio)
+):
+    """Reordena tarefas de uma etapa em lote"""
+    # Validar se etapa pertence ao serviço
+    etapa_service = EtapaService(db)
+    etapa = etapa_service.obter_etapa(etapa_id, escritorio_id)
+    
+    if etapa.servico_id != servico_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Etapa não pertence ao serviço informado"
+        )
+    
+    tarefa_service = TarefaService(db)
+    return tarefa_service.reordenar_tarefas(etapa_id, request.tarefa_ids, escritorio_id)

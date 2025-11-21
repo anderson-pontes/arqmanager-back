@@ -19,7 +19,7 @@ class ServicoRepository:
         if ativo is not None:
             query = query.filter(Servico.ativo == ativo)
         
-        return query.offset(skip).limit(limit).all()
+        return query.order_by(Servico.id).offset(skip).limit(limit).all()
     
     def get_by_id(self, servico_id: int, escritorio_id: int) -> Optional[Servico]:
         """Busca serviço por ID, garantindo que pertence ao escritório"""
@@ -143,6 +143,6 @@ class ServicoRepository:
                 Servico.id.in_(servicos_ids)
             ).options(
                 joinedload(Servico.etapas).joinedload(Etapa.tarefas)
-            ).offset(skip).limit(limit).all()
+            ).order_by(Servico.id).offset(skip).limit(limit).all()
         
         return []
