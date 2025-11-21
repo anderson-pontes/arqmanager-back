@@ -218,6 +218,11 @@ class UserCreate(UserBase):
     is_system_admin: Optional[bool] = False  # NOVO
     escritorio_id: Optional[int] = None  # Escritório para vincular
     perfis: Optional[List[str]] = None  # Lista de perfis (múltiplos) para o escritório
+    socio: Optional[bool] = False  # Indica se é sócio do escritório
+    banco: Optional[str] = None  # Nome do banco
+    agencia: Optional[str] = None  # Agência bancária
+    tipo_conta: Optional[str] = None  # Corrente, Poupança
+    conta: Optional[str] = None  # Número da conta
     
     @validator('senha')
     def validate_senha(cls, v):
@@ -251,6 +256,11 @@ class UserUpdate(BaseModel):
     tipo_pix: Optional[str] = None
     chave_pix: Optional[str] = None
     senha: Optional[str] = None
+    socio: Optional[bool] = None  # Indica se é sócio do escritório
+    banco: Optional[str] = None  # Nome do banco
+    agencia: Optional[str] = None  # Agência bancária
+    tipo_conta: Optional[str] = None  # Corrente, Poupança
+    conta: Optional[str] = None  # Número da conta
     
     @validator('cpf')
     def validate_cpf(cls, v):
@@ -278,6 +288,11 @@ class UserResponse(UserBase):
     tipo_pix: Optional[str] = None
     chave_pix: Optional[str] = None
     is_system_admin: bool = False  # NOVO
+    socio: Optional[bool] = False  # Indica se é sócio do escritório atual
+    banco: Optional[str] = None  # Nome do banco
+    agencia: Optional[str] = None  # Agência bancária
+    tipo_conta: Optional[str] = None  # Corrente, Poupança
+    conta: Optional[str] = None  # Número da conta
     created_at: datetime
     updated_at: datetime
     escritorios: Optional[List[EscritorioResponse]] = []  # Opcional para evitar problemas

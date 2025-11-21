@@ -12,6 +12,10 @@ class ColaboradorEscritorio(BaseModel, TimestampMixin):
     escritorio_id = Column(Integer, ForeignKey('escritorio.id'), nullable=False, index=True)
     tipo = Column(Integer)  # 1=Geral, 2=Terceirizado
     socio = Column(Boolean, default=False)
+    banco = Column(String(100))  # Nome do banco
+    agencia = Column(String(30))  # Agência bancária
+    tipo_conta = Column(String(20))  # Corrente, Poupança
+    conta = Column(String(20))  # Número da conta
     pix_tipo = Column(String(50))
     pix_chave = Column(String(255))
     

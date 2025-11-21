@@ -135,7 +135,11 @@ class UserRepository:
         
         if permanent:
             # Hard delete - remove do banco permanentemente
-            # Primeiro, remover relacionamentos com escritórios
+            # Primeiro, remover relacionamentos com escritórios e perfis
+            self.db.execute(
+                text("DELETE FROM colaborador_escritorio_perfil WHERE colaborador_id = :user_id"),
+                {"user_id": user_id}
+            )
             self.db.execute(
                 text("DELETE FROM colaborador_escritorio WHERE colaborador_id = :user_id"),
                 {"user_id": user_id}

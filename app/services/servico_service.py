@@ -116,5 +116,37 @@ class ServicoService:
     ) -> int:
         """Conta serviços"""
         return self.servico_repo.count(escritorio_id, ativo)
+    
+    def listar_servicos_hierarquia(
+        self,
+        escritorio_id: int,
+        ativo: Optional[bool] = None
+    ) -> List[Servico]:
+        """Lista serviços com etapas e tarefas aninhadas (hierarquia completa)"""
+        from sqlalchemy.orm import joinedload
+        from app.models.etapa import Etapa
+        from app.models.tarefa import Tarefa
+        
+        query = self.db.query(Servico).filter(
+            Servico.escritorio_id == escritorio_id
+        ).options(
+            joinedload(Servico.etapas).joinedload(Etapa.tarefas)
+        )
+        
+        if ativo is not None:
+            query = query.filter(Servico.ativo == ativo)
+        
+        # Ordenar por ordem em cada nível
+        servicos = query.all()
+        
+        # Ordenar etapas e tarefas manualmente (garantir ordem correta)
+        for servico in servicos:
+            if servico.etapas:
+                servico.etapas = sorted(servico.etapas, key=lambda e: (e.ordem, e.id))
+                for etapa in servico.etapas:
+                    if etapa.tarefas:
+                        etapa.tarefas = sorted(etapa.tarefas, key=lambda t: (t.ordem, t.id))
+        
+        return servicos
 
 

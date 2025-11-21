@@ -34,6 +34,18 @@ def listar_servicos(
     return service.listar_servicos(escritorio_id, skip, limit, ativo, search)
 
 
+@router.get("/hierarquia", response_model=List[ServicoResponse])
+def listar_servicos_hierarquia(
+    ativo: Optional[bool] = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+    escritorio_id: int = Depends(get_current_escritorio)
+):
+    """Lista todos os serviços com etapas e tarefas aninhadas (hierarquia completa)"""
+    service = ServicoService(db)
+    return service.listar_servicos_hierarquia(escritorio_id, ativo)
+
+
 @router.post("", response_model=ServicoResponse, status_code=status.HTTP_201_CREATED)
 def criar_servico(
     servico: ServicoCreate,

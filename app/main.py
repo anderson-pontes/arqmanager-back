@@ -1,9 +1,11 @@
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
+from pathlib import Path
 from app.core.config import settings
 from app.api.v1.api import api_router
 
@@ -102,6 +104,11 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 # Include API router
 app.include_router(api_router, prefix="/api/v1")
+
+# Servir arquivos estáticos de upload
+upload_dir = Path(settings.UPLOAD_DIR)
+upload_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(upload_dir)), name="uploads")
 
 
 @app.get("/", tags=["root"])
