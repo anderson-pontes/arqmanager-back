@@ -63,6 +63,10 @@ class ClienteRepository:
     def create(self, cliente: ClienteCreate, escritorio_id: int) -> Cliente:
         """Cria novo cliente, vinculado ao escritório"""
         # Mapear campos do frontend para o banco
+        # Priorizar campos separados, usar endereco como fallback
+        logradouro = cliente.logradouro or cliente.endereco
+        uf = cliente.uf or cliente.estado
+        
         cliente_data = {
             'nome': cliente.nome,
             'email': cliente.email,
@@ -70,9 +74,12 @@ class ClienteRepository:
             'identificacao': cliente.cpf_cnpj,
             'tipo_pessoa': cliente.tipo_pessoa,
             'data_nascimento': cliente.data_nascimento,
-            'logradouro': cliente.endereco,
+            'logradouro': logradouro,
+            'numero': cliente.numero,
+            'complemento': cliente.complemento,
+            'bairro': cliente.bairro,
             'cidade': cliente.cidade,
-            'uf': cliente.estado,
+            'uf': uf,
             'cep': cliente.cep,
             'indicado_por': cliente.observacoes,
             'ativo': cliente.ativo if cliente.ativo is not None else True,
@@ -92,18 +99,30 @@ class ClienteRepository:
             return None
         
         # Mapear campos do frontend para o banco
+        update_data = cliente.dict(exclude_unset=True)
+        
+        # Mapear campos de compatibilidade
         field_mapping = {
             'cpf_cnpj': 'identificacao',
-            'endereco': 'logradouro',
-            'estado': 'uf',
             'observacoes': 'indicado_por'
         }
         
-        update_data = cliente.dict(exclude_unset=True)
         for frontend_field, backend_field in field_mapping.items():
             if frontend_field in update_data:
                 value = update_data.pop(frontend_field)
                 update_data[backend_field] = value
+        
+        # Tratar endereço: priorizar logradouro, usar endereco como fallback
+        if 'logradouro' in update_data or 'endereco' in update_data:
+            logradouro = update_data.pop('logradouro', None) or update_data.pop('endereco', None)
+            if logradouro:
+                update_data['logradouro'] = logradouro
+        
+        # Tratar UF: priorizar uf, usar estado como fallback
+        if 'uf' in update_data or 'estado' in update_data:
+            uf = update_data.pop('uf', None) or update_data.pop('estado', None)
+            if uf:
+                update_data['uf'] = uf
         
         for field, value in update_data.items():
             setattr(db_cliente, field, value)

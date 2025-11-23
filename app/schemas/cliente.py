@@ -16,10 +16,17 @@ class ClienteCreate(BaseModel):
     cpf_cnpj: str
     tipo_pessoa: str = "fisica"
     data_nascimento: Optional[date] = None
-    endereco: Optional[str] = None
+    # Campos de endereço separados (preferenciais)
+    logradouro: Optional[str] = None
+    numero: Optional[str] = None
+    complemento: Optional[str] = None
+    bairro: Optional[str] = None
     cidade: Optional[str] = None
-    estado: Optional[str] = None
+    uf: Optional[str] = None
     cep: Optional[str] = None
+    # Campo de endereço completo (para compatibilidade)
+    endereco: Optional[str] = None
+    estado: Optional[str] = None  # Alias para uf (compatibilidade)
     observacoes: Optional[str] = None
     ativo: Optional[bool] = True
     
@@ -54,10 +61,17 @@ class ClienteUpdate(BaseModel):
     cpf_cnpj: Optional[str] = None
     tipo_pessoa: Optional[str] = None
     data_nascimento: Optional[date] = None
-    endereco: Optional[str] = None
+    # Campos de endereço separados (preferenciais)
+    logradouro: Optional[str] = None
+    numero: Optional[str] = None
+    complemento: Optional[str] = None
+    bairro: Optional[str] = None
     cidade: Optional[str] = None
-    estado: Optional[str] = None
+    uf: Optional[str] = None
     cep: Optional[str] = None
+    # Campo de endereço completo (para compatibilidade)
+    endereco: Optional[str] = None
+    estado: Optional[str] = None  # Alias para uf (compatibilidade)
     observacoes: Optional[str] = None
     ativo: Optional[bool] = None
     
@@ -93,10 +107,17 @@ class ClienteResponse(BaseModel):
     cpf_cnpj: Optional[str] = None
     tipo_pessoa: str
     data_nascimento: Optional[date] = None
-    endereco: Optional[str] = None
+    # Campos de endereço separados
+    logradouro: Optional[str] = None
+    numero: Optional[str] = None
+    complemento: Optional[str] = None
+    bairro: Optional[str] = None
     cidade: Optional[str] = None
-    estado: Optional[str] = None
+    uf: Optional[str] = None
     cep: Optional[str] = None
+    # Campos de compatibilidade
+    endereco: Optional[str] = None  # Alias para logradouro
+    estado: Optional[str] = None  # Alias para uf
     observacoes: Optional[str] = None
     ativo: bool
     created_at: datetime
@@ -128,10 +149,17 @@ class ClienteResponse(BaseModel):
             cpf_cnpj=obj.identificacao or None,  # Mapear identificacao -> cpf_cnpj
             tipo_pessoa=cls._normalize_tipo_pessoa(obj.tipo_pessoa),
             data_nascimento=obj.data_nascimento,
-            endereco=obj.logradouro or None,  # Mapear logradouro -> endereco
+            # Campos de endereço separados
+            logradouro=obj.logradouro or None,
+            numero=obj.numero or None,
+            complemento=obj.complemento or None,
+            bairro=obj.bairro or None,
             cidade=obj.cidade or None,
-            estado=obj.uf or None,  # Mapear uf -> estado
+            uf=obj.uf or None,
             cep=obj.cep or None,
+            # Campos de compatibilidade
+            endereco=obj.logradouro or None,  # Alias para logradouro
+            estado=obj.uf or None,  # Alias para uf
             observacoes=observacoes,  # Mapear indicado_por -> observacoes (com nome se for ID)
             ativo=obj.ativo,
             created_at=obj.created_at,

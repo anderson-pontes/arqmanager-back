@@ -107,6 +107,11 @@ class EscritorioResponse(EscritorioBase):
     id: int
     ativo: bool
     cor: Optional[str] = "#6366f1"  # Tornar opcional com valor padrão
+    dias_uteis: Optional[bool] = True
+    prazo_arquiva_proposta: Optional[int] = None
+    observacao_proposta_padrao: Optional[str] = None
+    observacao_contrato_padrao: Optional[str] = None
+    logo: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     

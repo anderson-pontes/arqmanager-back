@@ -30,8 +30,14 @@ def login(
     - is_system_admin: Se é admin do sistema
     - available_escritorios: Lista de escritórios disponíveis
     """
-    service = AuthService(db)
-    return service.login(credentials)
+    try:
+        service = AuthService(db)
+        return service.login(credentials)
+    except Exception as e:
+        import traceback
+        print(f"Erro no login: {e}")
+        print(traceback.format_exc())
+        raise
 
 
 @router.post("/set-context", response_model=SetContextResponse)

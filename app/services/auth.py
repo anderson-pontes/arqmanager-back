@@ -63,25 +63,50 @@ class AuthService:
             requires_selection = True  # Admin sempre precisa selecionar
         else:
             # Usuário comum: apenas seus escritórios
-            # Garantir que o relacionamento está carregado
-            if not hasattr(user, 'escritorios') or user.escritorios is None:
-                # Se não estiver carregado, recarregar o usuário com relacionamento
-                self.db.refresh(user, ['escritorios'])
-            
-            for escritorio in user.escritorios or []:
-                if not escritorio.ativo:
-                    continue
-                    
-                perfis = self._get_user_perfis_in_escritorio(user.id, escritorio.id)
-                available_escritorios.append(
-                    EscritorioContextInfo(
-                        id=escritorio.id,
-                        nome_fantasia=escritorio.nome_fantasia,
-                        razao_social=escritorio.razao_social,
-                        cor=escritorio.cor or "#6366f1",
-                        perfis=perfis
-                    )
-                )
+            # Buscar escritórios diretamente do banco para evitar problemas com relacionamentos
+            try:
+                # Buscar IDs dos escritórios vinculados ao usuário
+                escritorios_ids = self.db.execute(
+                    text("SELECT escritorio_id FROM colaborador_escritorio WHERE colaborador_id = :user_id AND ativo = true"),
+                    {"user_id": user.id}
+                ).fetchall()
+                escritorios_ids = [row[0] for row in escritorios_ids]
+                
+                # Buscar cada escritório e adicionar à lista
+                for escritorio_id in escritorios_ids:
+                    escritorio = self.escritorio_repo.get_by_id(escritorio_id)
+                    if escritorio and escritorio.ativo:
+                        perfis = self._get_user_perfis_in_escritorio(user.id, escritorio_id)
+                        available_escritorios.append(
+                            EscritorioContextInfo(
+                                id=escritorio.id,
+                                nome_fantasia=escritorio.nome_fantasia,
+                                razao_social=escritorio.razao_social,
+                                cor=escritorio.cor or "#6366f1",
+                                perfis=perfis
+                            )
+                        )
+            except Exception as e:
+                print(f"Erro ao buscar escritórios do usuário: {e}")
+                import traceback
+                traceback.print_exc()
+                # Se der erro, tentar usar relacionamento como fallback
+                try:
+                    if hasattr(user, 'escritorios') and user.escritorios:
+                        for escritorio in user.escritorios:
+                            if escritorio.ativo:
+                                perfis = self._get_user_perfis_in_escritorio(user.id, escritorio.id)
+                                available_escritorios.append(
+                                    EscritorioContextInfo(
+                                        id=escritorio.id,
+                                        nome_fantasia=escritorio.nome_fantasia,
+                                        razao_social=escritorio.razao_social,
+                                        cor=escritorio.cor or "#6366f1",
+                                        perfis=perfis
+                                    )
+                                )
+                except Exception as e2:
+                    print(f"Erro no fallback de relacionamento: {e2}")
             
             # Se usuário não tem escritórios vinculados, não pode fazer login
             if len(available_escritorios) == 0:
@@ -100,8 +125,21 @@ class AuthService:
             "email": user.email
         })
         
+        try:
+            # Pydantic v2: usar model_validate ao invés de from_orm
+            user_response = UserResponse.model_validate(user)
+        except Exception as e:
+            # Fallback: tentar criar manualmente se houver erro
+            print(f"Erro ao serializar usuário: {e}")
+            # Garantir que escritórios tenham cor válida
+            if hasattr(user, 'escritorios') and user.escritorios:
+                for esc in user.escritorios:
+                    if not esc.cor or esc.cor == '':
+                        esc.cor = "#6366f1"
+            user_response = UserResponse.model_validate(user)
+        
         return UserWithToken(
-            user=UserResponse.from_orm(user),
+            user=user_response,
             access_token=access_token,
             refresh_token=refresh_token,
             requires_escritorio_selection=requires_selection,
@@ -298,7 +336,12 @@ class AuthService:
         if not user:
             raise NotFoundException("Usuário não encontrado")
         
-        return UserResponse.from_orm(user)
+        # Garantir que escritórios tenham cor válida
+        if hasattr(user, 'escritorios') and user.escritorios:
+            for esc in user.escritorios:
+                if not esc.cor or esc.cor == '':
+                    esc.cor = "#6366f1"
+        return UserResponse.model_validate(user)
     
     def change_password(self, user_id: int, senha_atual: str, senha_nova: str) -> bool:
         """
@@ -376,7 +419,12 @@ class AuthService:
         self.db.commit()
         self.db.refresh(user)
         
-        return UserResponse.from_orm(user)
+        # Garantir que escritórios tenham cor válida
+        if hasattr(user, 'escritorios') and user.escritorios:
+            for esc in user.escritorios:
+                if not esc.cor or esc.cor == '':
+                    esc.cor = "#6366f1"
+        return UserResponse.model_validate(user)
     
     def update_profile_photo(self, user_id: int, foto_path: str) -> UserResponse:
         """

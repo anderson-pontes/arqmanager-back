@@ -58,6 +58,7 @@ class Escritorio(BaseModel, TimestampMixin):
     observacao_proposta_padrao = Column(String(1000))
     observacao_contrato_padrao = Column(String(1000))
     ativo = Column(Boolean, default=True)
+    logo = Column(String(500), nullable=True)  # Caminho da logo do escritório
     
     # Relacionamentos
     colaboradores = relationship("User", secondary=user_escritorio, back_populates="escritorios")

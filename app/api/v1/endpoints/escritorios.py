@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.services.escritorio import EscritorioService
@@ -10,7 +10,7 @@ from app.schemas.user import (
     UserCreate, 
     UserResponse
 )
-from app.api.deps import require_system_admin
+from app.api.deps import require_system_admin, get_current_user, require_escritorio_access, require_escritorio_edit_access
 from typing import Dict, List, Optional
 
 router = APIRouter()
@@ -33,10 +33,18 @@ def list_escritorios(
 @router.get("/{escritorio_id}", response_model=EscritorioResponse)
 def get_escritorio(
     escritorio_id: int,
-    current_user: dict = Depends(require_system_admin),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Busca escritório por ID (apenas admin do sistema)"""
+    """
+    Busca escritório por ID
+    Permite acesso se:
+    - É admin do sistema (pode ver qualquer escritório)
+    - É admin do escritório (pode ver apenas o próprio escritório)
+    """
+    # Verificar permissões
+    require_escritorio_access(escritorio_id, current_user, db)
+    
     service = EscritorioService(db)
     escritorio = service.get_by_id(escritorio_id)
     return EscritorioResponse.from_orm(escritorio)
@@ -70,17 +78,36 @@ def create_escritorio_with_admin(
 def update_escritorio(
     escritorio_id: int,
     escritorio_data: EscritorioUpdate,
-    current_user: dict = Depends(require_system_admin),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Atualiza um escritório (apenas admin do sistema)"""
+    """
+    Atualiza um escritório
+    Permite acesso se:
+    - É admin do sistema (pode editar qualquer escritório)
+    - É admin do escritório (pode editar apenas o próprio escritório)
+    """
+    # Verificar permissões de edição
+    require_escritorio_edit_access(escritorio_id, current_user, db)
+    
     repo = EscritorioRepository(db)
     escritorio = repo.get_by_id(escritorio_id)
     
     if not escritorio:
         raise HTTPException(status_code=404, detail="Escritório não encontrado")
     
-    update_data = escritorio_data.dict(exclude_unset=True)
+    # Se não é admin do sistema, restringir alguns campos
+    is_system_admin = current_user.get("is_system_admin", False)
+    if not is_system_admin:
+        # Admin do escritório não pode alterar alguns campos
+        restricted_fields = ['documento', 'cpf', 'ativo']
+        update_data = escritorio_data.dict(exclude_unset=True)
+        for field in restricted_fields:
+            if field in update_data:
+                del update_data[field]
+    else:
+        update_data = escritorio_data.dict(exclude_unset=True)
+    
     for field, value in update_data.items():
         setattr(escritorio, field, value)
     
@@ -177,4 +204,102 @@ def delete_escritorio(
         raise HTTPException(status_code=404, detail="Escritório não encontrado")
     
     return None
+
+
+@router.post("/{escritorio_id}/logo", response_model=EscritorioResponse)
+async def upload_escritorio_logo(
+    escritorio_id: int,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Faz upload de logo do escritório
+    Permite acesso se:
+    - É admin do sistema (pode fazer upload em qualquer escritório)
+    - É admin do escritório (pode fazer upload apenas no próprio escritório)
+    """
+    # Verificar permissões de edição
+    require_escritorio_edit_access(escritorio_id, current_user, db)
+    from app.utils.upload import save_upload_file, delete_upload_file
+    
+    try:
+        # Verificar se escritório existe
+        repo = EscritorioRepository(db)
+        escritorio = repo.get_by_id(escritorio_id)
+        
+        if not escritorio:
+            raise HTTPException(status_code=404, detail="Escritório não encontrado")
+        
+        # Salvar arquivo
+        file_path = save_upload_file(file, subdirectory="escritorios")
+        
+        # Deletar logo antiga se existir
+        if hasattr(escritorio, 'logo') and escritorio.logo:
+            try:
+                delete_upload_file(escritorio.logo)
+            except Exception:
+                pass  # Ignorar erros ao deletar logo antiga
+        
+        # Atualizar logo no banco
+        escritorio.logo = file_path
+        
+        db.commit()
+        db.refresh(escritorio)
+        
+        return EscritorioResponse.from_orm(escritorio)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao fazer upload da logo: {str(e)}"
+        )
+
+
+@router.delete("/{escritorio_id}/logo", response_model=EscritorioResponse)
+def delete_escritorio_logo(
+    escritorio_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Remove a logo do escritório
+    Permite acesso se:
+    - É admin do sistema (pode remover logo de qualquer escritório)
+    - É admin do escritório (pode remover logo apenas do próprio escritório)
+    """
+    # Verificar permissões de edição
+    require_escritorio_edit_access(escritorio_id, current_user, db)
+    from app.utils.upload import delete_upload_file
+    
+    try:
+        # Verificar se escritório existe
+        repo = EscritorioRepository(db)
+        escritorio = repo.get_by_id(escritorio_id)
+        
+        if not escritorio:
+            raise HTTPException(status_code=404, detail="Escritório não encontrado")
+        
+        # Deletar logo se existir
+        if escritorio.logo:
+            try:
+                delete_upload_file(escritorio.logo)
+            except Exception:
+                pass  # Ignorar erros ao deletar
+        
+        # Remover logo do banco
+        escritorio.logo = None
+        
+        db.commit()
+        db.refresh(escritorio)
+        
+        return EscritorioResponse.from_orm(escritorio)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao remover logo: {str(e)}"
+        )
 
