@@ -319,6 +319,21 @@ class UserLogin(BaseModel):
     senha: str
 
 
+class ChangePasswordRequest(BaseModel):
+    senha_atual: str
+    senha_nova: str
+    
+    @validator('senha_nova')
+    def validate_senha_nova(cls, v):
+        if not v or len(v) < 6:
+            raise ValueError('Nova senha deve ter no mínimo 6 caracteres')
+        return v
+
+
+class UpdateProfileRequest(BaseModel):
+    telefone: Optional[str] = None
+
+
 class Token(BaseModel):
     access_token: str
     refresh_token: str

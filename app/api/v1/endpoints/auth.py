@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends, Body, File, UploadFile
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.services.auth import AuthService
 from app.schemas.user import (
     UserLogin, UserWithToken, UserResponse,
     SetContextRequest, SetContextResponse,
-    EscritorioContextInfo
+    EscritorioContextInfo, ChangePasswordRequest, UpdateProfileRequest
 )
 from app.api.deps import get_current_user
+from app.utils.upload import save_upload_file
 from typing import List
 
 router = APIRouter()
@@ -100,3 +101,83 @@ def logout(current_user: dict = Depends(get_current_user)):
     que o usuário está autenticado.
     """
     return {"message": "Logout realizado com sucesso"}
+
+
+@router.post("/change-password")
+def change_password(
+    password_data: ChangePasswordRequest,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Altera a senha do usuário logado
+    """
+    service = AuthService(db)
+    service.change_password(
+        current_user["id"],
+        password_data.senha_atual,
+        password_data.senha_nova
+    )
+    return {"message": "Senha alterada com sucesso"}
+
+
+@router.get("/me/perfis")
+def get_user_perfis(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Retorna todos os perfis do usuário logado em todos os escritórios
+    """
+    service = AuthService(db)
+    perfis = service.get_user_perfis(current_user["id"])
+    return perfis
+
+
+@router.put("/me", response_model=UserResponse)
+def update_profile(
+    profile_data: UpdateProfileRequest,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Atualiza dados do perfil do usuário logado (telefone)
+    """
+    service = AuthService(db)
+    updated_user = service.update_profile(
+        current_user["id"],
+        profile_data.telefone
+    )
+    return updated_user
+
+
+@router.post("/me/foto", response_model=UserResponse)
+async def upload_profile_photo(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Faz upload de foto de perfil do usuário logado
+    """
+    try:
+        # Salvar arquivo
+        file_path = save_upload_file(file, subdirectory="colaboradores")
+        print(f"Arquivo salvo em: {file_path}")
+        
+        # Atualizar foto no banco
+        service = AuthService(db)
+        updated_user = service.update_profile_photo(current_user["id"], file_path)
+        
+        # Log para debug
+        print(f"Usuário atualizado - Foto: {updated_user.foto}")
+        if hasattr(updated_user, 'model_dump'):
+            print(f"UserResponse serializado: {updated_user.model_dump()}")
+        
+        return updated_user
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao fazer upload da foto: {str(e)}"
+        )

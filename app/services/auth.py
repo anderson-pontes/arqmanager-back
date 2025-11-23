@@ -299,3 +299,109 @@ class AuthService:
             raise NotFoundException("Usuário não encontrado")
         
         return UserResponse.from_orm(user)
+    
+    def change_password(self, user_id: int, senha_atual: str, senha_nova: str) -> bool:
+        """
+        Altera a senha do usuário logado
+        """
+        user = self.user_repo.get_by_id(user_id)
+        if not user:
+            raise NotFoundException("Usuário não encontrado")
+        
+        # Verificar senha atual
+        if not verify_password(senha_atual, user.senha):
+            raise UnauthorizedException("Senha atual incorreta")
+        
+        # Atualizar senha
+        from app.core.security import get_password_hash
+        user.senha = get_password_hash(senha_nova)
+        self.db.commit()
+        self.db.refresh(user)
+        
+        return True
+    
+    def get_user_perfis(self, user_id: int) -> List[dict]:
+        """
+        Retorna todos os perfis do usuário em todos os escritórios
+        """
+        user = self.user_repo.get_by_id(user_id)
+        if not user:
+            raise NotFoundException("Usuário não encontrado")
+        
+        # Buscar todos os perfis do usuário
+        result = self.db.execute(
+            text("""
+                SELECT 
+                    cep.escritorio_id,
+                    e.nome_fantasia,
+                    e.razao_social,
+                    cep.perfil,
+                    cep.ativo,
+                    cep.created_at,
+                    cep.updated_at
+                FROM colaborador_escritorio_perfil cep
+                INNER JOIN escritorio e ON e.id = cep.escritorio_id
+                WHERE cep.colaborador_id = :user_id
+                ORDER BY e.nome_fantasia, cep.perfil
+            """),
+            {"user_id": user_id}
+        ).fetchall()
+        
+        perfis = []
+        for row in result:
+            perfis.append({
+                "escritorio_id": row[0],
+                "escritorio_nome": row[1],
+                "escritorio_razao_social": row[2],
+                "perfil": row[3],
+                "ativo": row[4],
+                "created_at": row[5].isoformat() if row[5] else None,
+                "updated_at": row[6].isoformat() if row[6] else None,
+            })
+        
+        return perfis
+    
+    def update_profile(self, user_id: int, telefone: Optional[str] = None) -> UserResponse:
+        """
+        Atualiza dados do perfil do usuário logado (telefone)
+        """
+        user = self.user_repo.get_by_id(user_id)
+        if not user:
+            raise NotFoundException("Usuário não encontrado")
+        
+        # Atualizar telefone se fornecido
+        if telefone is not None:
+            user.telefone = telefone
+        
+        self.db.commit()
+        self.db.refresh(user)
+        
+        return UserResponse.from_orm(user)
+    
+    def update_profile_photo(self, user_id: int, foto_path: str) -> UserResponse:
+        """
+        Atualiza a foto de perfil do usuário logado
+        """
+        user = self.user_repo.get_by_id(user_id)
+        if not user:
+            raise NotFoundException("Usuário não encontrado")
+        
+        # Deletar foto antiga se existir
+        if user.foto:
+            from app.utils.upload import delete_upload_file
+            try:
+                delete_upload_file(user.foto)
+            except Exception:
+                pass  # Ignorar erros ao deletar foto antiga
+        
+        # Atualizar foto
+        user.foto = foto_path
+        self.db.commit()
+        self.db.refresh(user)
+        
+        print(f"Foto atualizada no banco - user.foto: {user.foto}")
+        
+        user_response = UserResponse.from_orm(user)
+        print(f"UserResponse criado - foto: {user_response.foto}")
+        
+        return user_response
